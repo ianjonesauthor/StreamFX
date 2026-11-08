@@ -66,10 +66,11 @@
             </div>
         </div>
         <div style="margin-top: 10px;">
-            <small>Image Overlay URL (GitHub / Web URL)</small>
+            <small>Image Overlay URL (GitHub Raw URL)</small>
             <input id="userImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png">
         </div>
         <button onclick="saveBinding('user')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE USER BINDING</button>
+        <button onclick="testAlert('user')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST USER ALERT</button>
     </div>
 
     <div class="card">
@@ -81,10 +82,11 @@
             <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
         </div>
         <div style="margin-top: 10px;">
-            <small>Image Overlay URL (GitHub / Web URL)</small>
+            <small>Image Overlay URL (GitHub Raw URL)</small>
             <input id="giftImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png">
         </div>
         <button onclick="saveBinding('gift')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE GIFT BINDING TO DATABASE</button>
+        <button onclick="testAlert('gift')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST GIFT ALERT</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -145,6 +147,32 @@
             }
             alert("Binding saved!");
             initDashboard();
+        }
+
+        function testAlert(type) {
+            if (type === 'user') {
+                const user = document.getElementById('unboundUserSelect').value || document.getElementById('userName').value || "TestUser";
+                const file = document.getElementById('userFile').value;
+                const imageUrl = document.getElementById('userImageUrl').value.trim();
+
+                socket.emit('trigger_alert', {
+                    username: user,
+                    text: `Joined the stream! (Test)`,
+                    imageUrl: imageUrl,
+                    soundUrl: file ? `./sounds/${file}` : null
+                });
+            } else {
+                const gift = document.getElementById('giftDropdown').value.trim() || "Rose";
+                const file = document.getElementById('giftFile').value;
+                const imageUrl = document.getElementById('giftImageUrl').value.trim();
+
+                socket.emit('trigger_alert', {
+                    username: "TestViewer",
+                    text: `Sent ${gift}! (Test)`,
+                    imageUrl: imageUrl,
+                    soundUrl: file ? `./gift_sounds/${file}` : null
+                });
+            }
         }
 
         async function initDashboard() {

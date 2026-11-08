@@ -63,6 +63,11 @@ io.on('connection', (socket) => {
         fs.writeFileSync(giftImagesPath, JSON.stringify(data, null, 2));
     });
 
+    // Allows direct testing triggers from the dashboard or server
+    socket.on('trigger_alert', (data) => {
+        io.emit('trigger_alert', data);
+    });
+
     socket.on('CONNECT_TIKTOK', async (username) => {
         if (tiktokConnection) {
             try {
