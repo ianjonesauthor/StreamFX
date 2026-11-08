@@ -49,6 +49,39 @@
         </div>
     </div>
 
+    <!-- NEW DEFAULT UNBOUND USER SETTINGS CARD -->
+    <div class="card" style="border: 1px solid #25f4ee;">
+        <h3 style="color: #25f4ee;">DEFAULT UNBOUND NEW JOIN GREETING</h3>
+        <small>Sound Assignment (Plays automatically for any non-bound user)</small>
+        <select id="defaultSoundFile"><option value="">Loading sounds...</option></select>
+        <div class="controls">
+            <button onclick="previewSound('defaultSoundFile', 'sounds')" style="background: #444;">▶️ PLAY</button>
+            <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
+        </div>
+
+        <div class="image-preview-container">
+            <div style="flex-grow: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <small style="margin:0;">Greeting Overlay Image (Flashes on screen)</small>
+                    <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
+                </div>
+                <select id="defaultImageSelect" onchange="selectOverlayImage('defaultImageSelect', 'defaultImageUrl', 'defaultPreviewImg')">
+                    <option value="">Loading repo images...</option>
+                </select>
+                <input id="defaultImageUrl" type="hidden">
+            </div>
+            <div>
+                <small>Preview</small>
+                <div class="preview-box">
+                    <img id="defaultPreviewImg" alt="Preview">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="saveDefaultSettings()" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE DEFAULT NEW JOIN SETTINGS</button>
+        <button onclick="testAlert('default')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST DEFAULT GREETING ALERT</button>
+    </div>
+
     <div class="card">
         <h3>BIND USER TO SOUND & IMAGE</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -71,8 +104,14 @@
         
         <div class="image-preview-container">
             <div style="flex-grow: 1;">
-                <small>Image Overlay URL (GitHub Raw URL)</small>
-                <input id="userImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png" oninput="updatePreview('userImageUrl', 'userPreviewImg')">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <small style="margin:0;">Overlay Image (From GitHub Repo Overlays)</small>
+                    <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
+                </div>
+                <select id="userImageSelect" onchange="selectOverlayImage('userImageSelect', 'userImageUrl', 'userPreviewImg')">
+                    <option value="">Loading repo images...</option>
+                </select>
+                <input id="userImageUrl" type="hidden">
             </div>
             <div>
                 <small>Preview</small>
@@ -97,8 +136,14 @@
 
         <div class="image-preview-container">
             <div style="flex-grow: 1;">
-                <small>Image Overlay URL (GitHub Raw URL)</small>
-                <input id="giftImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png" oninput="updatePreview('giftImageUrl', 'giftPreviewImg')">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <small style="margin:0;">Overlay Image (From GitHub Repo Overlays)</small>
+                    <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
+                </div>
+                <select id="giftImageSelect" onchange="selectOverlayImage('giftImageSelect', 'giftImageUrl', 'giftPreviewImg')">
+                    <option value="">Loading repo images...</option>
+                </select>
+                <input id="giftImageUrl" type="hidden">
             </div>
             <div>
                 <small>Preview</small>
@@ -115,7 +160,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let bindings = {}; let giftBindings = {}; let userImages = {}; let giftImages = {}; let currentAudio = null;
+        let bindings = {}; let giftBindings = {}; let userImages = {}; let giftImages = {}; let defaultSettings = {}; let currentAudio = null;
         function startApp() { document.getElementById('unlockOverlay').style.display = 'none'; }
 
         function previewSound(s, f) {
@@ -128,15 +173,37 @@
 
         function stopPreview() { if(currentAudio) currentAudio.pause(); }
 
-        function updatePreview(inputId, imgId) {
-            const url = document.getElementById(inputId).value.trim();
+        function selectOverlayImage(selectId, inputId, imgId) {
+            const filename = document.getElementById(selectId).value;
+            const inputElement = document.getElementById(inputId);
             const imgElement = document.getElementById(imgId);
-            if (url) {
-                imgElement.src = url;
+
+            if (filename) {
+                const rawUrl = `https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/${filename}`;
+                inputElement.value = rawUrl;
+                imgElement.src = rawUrl;
                 imgElement.style.display = 'block';
             } else {
+                inputElement.value = '';
                 imgElement.src = '';
                 imgElement.style.display = 'none';
+            }
+        }
+
+        async function refreshOverlayImages() {
+            try {
+                const res = await fetch('/get-overlay-images');
+                const files = await res.json();
+                const options = `<option value="">Select overlay image...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join('');
+                
+                document.getElementById('userImageSelect').innerHTML = options;
+                document.getElementById('giftImageSelect').innerHTML = options;
+                document.getElementById('defaultImageSelect').innerHTML = options;
+                
+                alert(`Refreshed! Found ${files.length} overlay images in repo.`);
+            } catch (e) {
+                console.error("Failed to refresh overlay images:", e);
+                alert("Failed to fetch images from GitHub repo.");
             }
         }
 
@@ -154,6 +221,15 @@
             socket.emit('SYNC_USER_BINDINGS', bindings);
             socket.emit('SYNC_USER_IMAGES', userImages);
             initDashboard();
+        }
+
+        function saveDefaultSettings() {
+            const defaultSound = document.getElementById('defaultSoundFile').value;
+            const defaultImageUrl = document.getElementById('defaultImageUrl').value.trim();
+
+            defaultSettings = { defaultSound, defaultImageUrl };
+            socket.emit('SYNC_DEFAULT_SETTINGS', defaultSettings);
+            alert("Default Unbound Join Settings Saved!");
         }
 
         function saveBinding(type) {
@@ -185,7 +261,17 @@
         }
 
         function testAlert(type) {
-            if (type === 'user') {
+            if (type === 'default') {
+                const file = document.getElementById('defaultSoundFile').value;
+                const imageUrl = document.getElementById('defaultImageUrl').value.trim();
+
+                socket.emit('trigger_alert', {
+                    username: "NewViewer",
+                    text: `Joined the stream! (Default Greeting)`,
+                    imageUrl: imageUrl,
+                    soundUrl: file ? `./sounds/${file}` : null
+                });
+            } else if (type === 'user') {
                 const user = document.getElementById('unboundUserSelect').value || document.getElementById('userName').value || "TestUser";
                 const file = document.getElementById('userFile').value;
                 const imageUrl = document.getElementById('userImageUrl').value.trim();
@@ -212,16 +298,26 @@
 
         async function initDashboard() {
             try {
-                const [usersRes, userBindRes, giftNamesRes, giftBindRes, userImgRes, giftImgRes] = await Promise.all([
+                const [usersRes, userBindRes, giftNamesRes, giftBindRes, userImgRes, giftImgRes, defRes] = await Promise.all([
                     fetch('/get-user-categories').then(r => r.json()),
                     fetch('/get-user-bindings').then(r => r.json()),
                     fetch('/get-gift-names').then(r => r.json()),
                     fetch('/get-gift-bindings').then(r => r.json()),
                     fetch('/get-user-images').then(r => r.json()),
-                    fetch('/get-gift-images').then(r => r.json())
+                    fetch('/get-gift-images').then(r => r.json()),
+                    fetch('/get-default-settings').then(r => r.json())
                 ]);
-                bindings = userBindRes; giftBindings = giftBindRes; userImages = userImgRes; giftImages = giftImgRes;
+                bindings = userBindRes; giftBindings = giftBindRes; userImages = userImgRes; giftImages = giftImgRes; defaultSettings = defRes;
                 
+                if (defaultSettings.defaultSound) {
+                    document.getElementById('defaultSoundFile').value = defaultSettings.defaultSound;
+                }
+                if (defaultSettings.defaultImageUrl) {
+                    document.getElementById('defaultImageUrl').value = defaultSettings.defaultImageUrl;
+                    document.getElementById('defaultPreviewImg').src = defaultSettings.defaultImageUrl;
+                    document.getElementById('defaultPreviewImg').style.display = 'block';
+                }
+
                 const allBoundUsers = [...new Set([...Object.keys(bindings), ...Object.keys(userImages)])];
                 document.getElementById('userName').innerHTML = `<option value="">Bound Users...</option>` + allBoundUsers.map(u => `<option value="${u}">${u}</option>`).join('');
                 
@@ -236,21 +332,6 @@
             } catch (e) { console.error("Init Error:", e); }
         }
 
-        document.getElementById('userName').onchange = (e) => {
-            const val = e.target.value.toLowerCase();
-            if (userImages[val]) {
-                document.getElementById('userImageUrl').value = userImages[val];
-                updatePreview('userImageUrl', 'userPreviewImg');
-            }
-        };
-        document.getElementById('giftDropdown').onchange = (e) => {
-            const val = e.target.value;
-            if (giftImages[val]) {
-                document.getElementById('giftImageUrl').value = giftImages[val];
-                updatePreview('giftImageUrl', 'giftPreviewImg');
-            }
-        };
-
         socket.on('status_update', (msg) => { document.getElementById('status').innerText = 'Status: ' + msg; });
         socket.on('member_join', (data) => { appendToLog('log', `Joined: @${data.username}`); });
         socket.on('follow', (data) => {
@@ -260,9 +341,15 @@
         socket.on('gift', (data) => { appendToLog('giftLog', `${data.giftName} - @${data.username}`); });
 
         window.addEventListener('DOMContentLoaded', async () => {
+            fetch('/get-sounds').then(r => r.json()).then(files => {
+                const options = `<option value="">Select sound...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join('');
+                document.getElementById('userFile').innerHTML = options;
+                document.getElementById('defaultSoundFile').innerHTML = options;
+            });
+            fetch('/get-gift-sounds').then(r => r.json()).then(files => document.getElementById('giftFile').innerHTML = `<option value="">Select sound...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join(''));
+            
+            await refreshOverlayImages();
             await initDashboard();
-            fetch('/get-sounds').then(r => r.json()).then(files => document.getElementById('userFile').innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join(''));
-            fetch('/get-gift-sounds').then(r => r.json()).then(files => document.getElementById('giftFile').innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join(''));
         });
 
         document.getElementById('btnConnect').onclick = () => {

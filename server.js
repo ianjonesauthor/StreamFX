@@ -14,9 +14,10 @@ const boundUsersDir = path.join(__dirname, 'bound_users');
 const giftDir = path.join(__dirname, 'gifts');
 const soundsDir = path.join(__dirname, 'sounds');
 const giftSoundsDir = path.join(__dirname, 'gift_sounds');
+const overlaysDir = path.join(__dirname, 'overlays');
 
 // Ensure directories exist
-[boundUsersDir, giftDir, soundsDir, giftSoundsDir].forEach(dir => {
+[boundUsersDir, giftDir, soundsDir, giftSoundsDir, overlaysDir].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
@@ -25,6 +26,7 @@ const userBindingsPath = path.join(boundUsersDir, 'bindings.json');
 const giftBindingsPath = path.join(boundUsersDir, 'gift_bindings.json');
 const userImagesPath = path.join(boundUsersDir, 'user_images.json');
 const giftImagesPath = path.join(boundUsersDir, 'gift_images.json');
+const defaultSettingsPath = path.join(boundUsersDir, 'default_settings.json');
 const giftsTxtPath = path.join(giftDir, 'gifts.txt');
 const joinedUsersPath = path.join(boundUsersDir, 'users.txt');
 
@@ -39,6 +41,7 @@ let userBindings = loadJSON(userBindingsPath);
 let giftBindings = loadJSON(giftBindingsPath);
 let userImages = loadJSON(userImagesPath);
 let giftImages = loadJSON(giftImagesPath);
+let defaultSettings = loadJSON(defaultSettingsPath);
 
 let tiktokConnection = null;
 
@@ -63,7 +66,11 @@ io.on('connection', (socket) => {
         fs.writeFileSync(giftImagesPath, JSON.stringify(data, null, 2));
     });
 
-    // Allows direct testing triggers from the dashboard or server
+    socket.on('SYNC_DEFAULT_SETTINGS', (data) => {
+        defaultSettings = data;
+        fs.writeFileSync(defaultSettingsPath, JSON.stringify(data, null, 2));
+    });
+
     socket.on('trigger_alert', (data) => {
         io.emit('trigger_alert', data);
     });
@@ -106,8 +113,8 @@ io.on('connection', (socket) => {
                 io.emit('member_join', { username: d.uniqueId });
 
                 const lowerUser = d.uniqueId.toLowerCase();
-                const soundFile = userBindings[lowerUser];
-                const imageUrl = userImages[lowerUser] || '';
+                const soundFile = userBindings[lowerUser] || defaultSettings.defaultSound || '';
+                const imageUrl = userImages[lowerUser] || defaultSettings.defaultImageUrl || '';
 
                 if (soundFile || imageUrl) {
                     io.emit('trigger_alert', {
@@ -139,6 +146,30 @@ app.get('/get-user-bindings', (req, res) => res.json(userBindings));
 app.get('/get-gift-bindings', (req, res) => res.json(giftBindings));
 app.get('/get-user-images', (req, res) => res.json(userImages));
 app.get('/get-gift-images', (req, res) => res.json(giftImages));
+app.get('/get-default-settings', (req, res) => res.json(defaultSettings));
+
+// Fetch overlay images from GitHub Repository API with local fallback
+app.get('/get-overlay-images', async (req, res) => {
+    try {
+        const response = await fetch('https://api.github.com/repos/ianjonesauthor/StreamFX/contents/overlays', {
+            headers: { 'User-Agent': 'StreamFX-Live-App' }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const imageFiles = data
+                .filter(item => item.type === 'file' && /\.(png|jpg|jpeg|gif|webp)$/i.test(item.name))
+                .map(item => item.name);
+            return res.json(imageFiles);
+        }
+    } catch (e) {
+        console.log("GitHub API fetch fallback triggered:", e.message);
+    }
+
+    fs.readdir(overlaysDir, (err, files) => {
+        if (err) return res.json([]);
+        res.json(files.filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f)));
+    });
+});
 
 app.get('/get-gift-names', (req, res) => {
     fs.readFile(giftsTxtPath, 'utf8', (err, data) => {
