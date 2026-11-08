@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StreamFX Live - Overlay</title>
+    <style>
+        body { background: transparent; margin: 0; overflow: hidden; font-family: sans-serif; }
+        #alert-container { position: fixed; bottom: 50px; left: 50px; display: flex; flex-direction: column; align-items: flex-start; gap: 20px; z-index: 999; }
+        .alert-box { display: flex; align-items: center; background: rgba(0,0,0,0.85); border: 2px solid #fe2c55; padding: 15px; border-radius: 12px; color: #fff; animation: fadeInOut 4s ease forwards; max-width: 400px; box-shadow: 0 0 15px rgba(254, 44, 85, 0.4); }
+        .alert-box img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 15px; border: 2px solid #25f4ee; }
+        .alert-text { font-size: 18px; font-weight: bold; word-break: break-word; }
+        .alert-text span { color: #25f4ee; display: block; font-size: 14px; margin-top: 4px; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="alert-container"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('trigger_alert', (data) => {
+            if (data.soundUrl) {
+                const audio = new Audio(data.soundUrl);
+                audio.play().catch(e => console.log("Audio play blocked:", e));
+            }
+
+            if (data.imageUrl) {
+                const container = document.getElementById('alert-container');
+                const alertBox = document.createElement('div');
+                alertBox.className = 'alert-box';
+                alertBox.innerHTML = `
+                    <img src="${data.imageUrl}" alt="Alert Image">
+                    <div class="alert-text">
+                        ${data.text}
+                        <span>@${data.username}</span>
+                    </div>
+                `;
+                container.appendChild(alertBox);
+
+                setTimeout(() => { alertBox.remove(); }, 4000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StreamFX Live - Dashboard</title>
+    <style>
+        body { background: #121212; color: #fff; font-family: sans-serif; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        .log-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .log-box { background: #000; height: 150px; overflow-y: scroll; padding: 10px; border-radius: 10px; border: 1px solid #333; font-family: monospace; font-size: 12px; scroll-behavior: smooth; }
+        #log { color: #00ff00; } #giftLog { color: #00bfff; }
+        input, button, select { padding: 10px; margin: 5px 0; width: 100%; border-radius: 5px; border: none; box-sizing: border-box; }
+        button { background: #fe2c55; color: white; cursor: pointer; font-weight: bold; }
+        h2 { color: #fe2c55; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; }
+        .modal-content { background: #222; margin: 10% auto; padding: 20px; width: 80%; border-radius: 15px; border: 1px solid #fe2c55; text-align: center; }
+        .controls { display: flex; gap: 5px; }
+        #unlockOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div id="unlockOverlay"><button onclick="startApp()" style="width: 250px; height: 70px; font-size: 20px;">CLICK TO START AUDIO</button></div>
+
+    <div class="card">
+        <h2>StreamFX Live</h2>
+        <button onclick="document.getElementById('rankModal').style.display='block'" style="background: #ffa500; color: #000;">VIEW RANK SYSTEM</button>
+        <input id="tkUser" placeholder="Enter TikTok Username">
+        <button id="btnConnect">CONNECT TO TIKTOK</button>
+        <button id="btnDisconnect" style="background: #333; margin-top: 10px;">DISCONNECT</button>
+        <div id="status" style="margin-top:10px; font-size: 0.9rem; color: #fe2c55; font-weight: bold;">Status: Disconnected</div>
+    </div>
+
+    <div id="rankModal" class="modal">
+        <div class="modal-content">
+            <h2>Rank Progression</h2>
+            <p>⭐ Stars (1-5) | 🏆 Trophies (6-30) | 👑 Crowns (31-155) | 💎 Diamonds (300+)</p>
+            <button onclick="document.getElementById('rankModal').style.display='none'" style="background: #fe2c55;">CLOSE</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>LOGS</h3>
+        <div class="log-container">
+            <div><small style="color:#fe2c55;">EVENT LOG</small><div id="log" class="log-box"></div></div>
+            <div><small style="color:#fe2c55;">GIFT LOG</small><div id="giftLog" class="log-box"></div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>BIND USER TO SOUND & IMAGE</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <small>Bound Users</small>
+                <select id="userName"><option value="">Bound Users...</option></select>
+                <button onclick="removeBinding()" style="background: #ff4d4d; font-size: 10px; padding: 5px;">REMOVE BINDING</button>
+                <small>Unbound New Joins</small>
+                <select id="unboundUserSelect"><option value="">Waiting for joins...</option></select>
+            </div>
+            <div>
+                <small>Sound Assignment</small>
+                <select id="userFile"><option value="">Loading sounds...</option></select>
+                <div class="controls">
+                    <button onclick="previewSound('userFile', 'sounds')" style="background: #444;">▶️ PLAY</button>
+                    <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <small>Image Overlay URL (GitHub / Web URL)</small>
+            <input id="userImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png">
+        </div>
+        <button onclick="saveBinding('user')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE USER BINDING</button>
+    </div>
+
+    <div class="card">
+        <h3>BIND GIFT TO SOUND & IMAGE</h3>
+        <select id="giftDropdown"><option value="">Select a gift...</option></select>
+        <select id="giftFile"><option value="">Loading gift sounds...</option></select>
+        <div class="controls">
+            <button onclick="previewSound('giftFile', 'gift_sounds')" style="background: #444;">▶️ PLAY</button>
+            <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
+        </div>
+        <div style="margin-top: 10px;">
+            <small>Image Overlay URL (GitHub / Web URL)</small>
+            <input id="giftImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png">
+        </div>
+        <button onclick="saveBinding('gift')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE GIFT BINDING TO DATABASE</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let bindings = {}; let giftBindings = {}; let userImages = {}; let giftImages = {}; let currentAudio = null;
+        function startApp() { document.getElementById('unlockOverlay').style.display = 'none'; }
+
+        function previewSound(s, f) {
+            stopPreview();
+            const val = document.getElementById(s).value;
+            if(!val) return;
+            currentAudio = new Audio(`./${f}/${val}`);
+            currentAudio.play().catch(e => console.error("Preview blocked:", e));
+        }
+
+        function stopPreview() { if(currentAudio) currentAudio.pause(); }
+
+        function appendToLog(id, m) {
+            const logBox = document.getElementById(id);
+            logBox.innerHTML += `<div>${m}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function removeBinding() {
+            const user = document.getElementById('userName').value;
+            if (!user) return alert("Please select a bound user.");
+            delete bindings[user];
+            delete userImages[user];
+            socket.emit('SYNC_USER_BINDINGS', bindings);
+            socket.emit('SYNC_USER_IMAGES', userImages);
+            initDashboard();
+        }
+
+        function saveBinding(type) {
+            if (type === 'user') {
+                const user = (document.getElementById('unboundUserSelect').value || document.getElementById('userName').value).toLowerCase();
+                const file = document.getElementById('userFile').value;
+                const imageUrl = document.getElementById('userImageUrl').value.trim();
+                
+                if(!user) return alert("Select user");
+                if(file) bindings[user] = file;
+                if(imageUrl) userImages[user] = imageUrl;
+
+                socket.emit('SYNC_USER_BINDINGS', bindings);
+                socket.emit('SYNC_USER_IMAGES', userImages);
+            } else {
+                const gift = document.getElementById('giftDropdown').value.trim();
+                const file = document.getElementById('giftFile').value;
+                const imageUrl = document.getElementById('giftImageUrl').value.trim();
+
+                if(!gift) return alert("Select gift");
+                if(file) giftBindings[gift] = file;
+                if(imageUrl) giftImages[gift] = imageUrl;
+
+                socket.emit('SYNC_GIFT_BINDINGS', giftBindings);
+                socket.emit('SYNC_GIFT_IMAGES', giftImages);
+            }
+            alert("Binding saved!");
+            initDashboard();
+        }
+
+        async function initDashboard() {
+            try {
+                const [usersRes, userBindRes, giftNamesRes, giftBindRes, userImgRes, giftImgRes] = await Promise.all([
+                    fetch('/get-user-categories').then(r => r.json()),
+                    fetch('/get-user-bindings').then(r => r.json()),
+                    fetch('/get-gift-names').then(r => r.json()),
+                    fetch('/get-gift-bindings').then(r => r.json()),
+                    fetch('/get-user-images').then(r => r.json()),
+                    fetch('/get-gift-images').then(r => r.json())
+                ]);
+                bindings = userBindRes; giftBindings = giftBindRes; userImages = userImgRes; giftImages = giftImgRes;
+                
+                const allBoundUsers = [...new Set([...Object.keys(bindings), ...Object.keys(userImages)])];
+                document.getElementById('userName').innerHTML = `<option value="">Bound Users...</option>` + allBoundUsers.map(u => `<option value="${u}">${u}</option>`).join('');
+                
+                document.getElementById('giftDropdown').innerHTML = `<option value="">Select a gift...</option>` + giftNamesRes.map(g => {
+                    const sound = giftBindings[g] ? ` [Sound: ${giftBindings[g]}]` : "";
+                    const img = giftImages[g] ? ` [Img Set]` : "";
+                    return `<option value="${g}">${g}${sound}${img}</option>`;
+                }).join('');
+                
+                const unbound = (usersRes.joined || []).filter(u => !bindings[u] && !userImages[u]);
+                document.getElementById('unboundUserSelect').innerHTML = `<option value="">Unbound Users...</option>` + unbound.map(u => `<option value="${u}">${u}</option>`).join('');
+            } catch (e) { console.error("Init Error:", e); }
+        }
+
+        document.getElementById('userName').onchange = (e) => {
+            const val = e.target.value.toLowerCase();
+            if (userImages[val]) document.getElementById('userImageUrl').value = userImages[val];
+        };
+        document.getElementById('giftDropdown').onchange = (e) => {
+            const val = e.target.value;
+            if (giftImages[val]) document.getElementById('giftImageUrl').value = giftImages[val];
+        };
+
+        socket.on('status_update', (msg) => { document.getElementById('status').innerText = 'Status: ' + msg; });
+        socket.on('member_join', (data) => { appendToLog('log', `Joined: @${data.username}`); });
+        socket.on('follow', (data) => {
+            appendToLog('log', `Followed: @${data.username}`);
+            new Audio('./sounds/follow.mp3').play().catch(e => console.error("Follow sound error:", e));
+        });
+        socket.on('gift', (data) => { appendToLog('giftLog', `${data.giftName} - @${data.username}`); });
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initDashboard();
+            fetch('/get-sounds').then(r => r.json()).then(files => document.getElementById('userFile').innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join(''));
+            fetch('/get-gift-sounds').then(r => r.json()).then(files => document.getElementById('giftFile').innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join(''));
+        });
+
+        document.getElementById('btnConnect').onclick = () => {
+            const user = document.getElementById('tkUser').value;
+            if(!user) return alert("Enter TikTok Username!");
+            socket.emit('CONNECT_TIKTOK', user);
+        };
+        document.getElementById('btnDisconnect').onclick = () => socket.emit('DISCONNECT_TIKTOK');
+    </script>
+</body>
+</html>
