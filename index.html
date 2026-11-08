@@ -15,6 +15,9 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; }
         .modal-content { background: #222; margin: 10% auto; padding: 20px; width: 80%; border-radius: 15px; border: 1px solid #fe2c55; text-align: center; }
         .controls { display: flex; gap: 5px; }
+        .image-preview-container { display: flex; align-items: center; gap: 15px; margin-top: 10px; }
+        .preview-box { width: 60px; height: 60px; background: #000; border: 2px dashed #444; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
         #unlockOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
@@ -65,10 +68,20 @@
                 </div>
             </div>
         </div>
-        <div style="margin-top: 10px;">
-            <small>Image Overlay URL (GitHub Raw URL)</small>
-            <input id="userImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png">
+        
+        <div class="image-preview-container">
+            <div style="flex-grow: 1;">
+                <small>Image Overlay URL (GitHub Raw URL)</small>
+                <input id="userImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png" oninput="updatePreview('userImageUrl', 'userPreviewImg')">
+            </div>
+            <div>
+                <small>Preview</small>
+                <div class="preview-box">
+                    <img id="userPreviewImg" alt="Preview">
+                </div>
+            </div>
         </div>
+
         <button onclick="saveBinding('user')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE USER BINDING</button>
         <button onclick="testAlert('user')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST USER ALERT</button>
     </div>
@@ -81,10 +94,20 @@
             <button onclick="previewSound('giftFile', 'gift_sounds')" style="background: #444;">▶️ PLAY</button>
             <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
         </div>
-        <div style="margin-top: 10px;">
-            <small>Image Overlay URL (GitHub Raw URL)</small>
-            <input id="giftImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png">
+
+        <div class="image-preview-container">
+            <div style="flex-grow: 1;">
+                <small>Image Overlay URL (GitHub Raw URL)</small>
+                <input id="giftImageUrl" placeholder="https://raw.githubusercontent.com/.../image.png" oninput="updatePreview('giftImageUrl', 'giftPreviewImg')">
+            </div>
+            <div>
+                <small>Preview</small>
+                <div class="preview-box">
+                    <img id="giftPreviewImg" alt="Preview">
+                </div>
+            </div>
         </div>
+
         <button onclick="saveBinding('gift')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE GIFT BINDING TO DATABASE</button>
         <button onclick="testAlert('gift')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST GIFT ALERT</button>
     </div>
@@ -104,6 +127,18 @@
         }
 
         function stopPreview() { if(currentAudio) currentAudio.pause(); }
+
+        function updatePreview(inputId, imgId) {
+            const url = document.getElementById(inputId).value.trim();
+            const imgElement = document.getElementById(imgId);
+            if (url) {
+                imgElement.src = url;
+                imgElement.style.display = 'block';
+            } else {
+                imgElement.src = '';
+                imgElement.style.display = 'none';
+            }
+        }
 
         function appendToLog(id, m) {
             const logBox = document.getElementById(id);
@@ -203,11 +238,17 @@
 
         document.getElementById('userName').onchange = (e) => {
             const val = e.target.value.toLowerCase();
-            if (userImages[val]) document.getElementById('userImageUrl').value = userImages[val];
+            if (userImages[val]) {
+                document.getElementById('userImageUrl').value = userImages[val];
+                updatePreview('userImageUrl', 'userPreviewImg');
+            }
         };
         document.getElementById('giftDropdown').onchange = (e) => {
             const val = e.target.value;
-            if (giftImages[val]) document.getElementById('giftImageUrl').value = giftImages[val];
+            if (giftImages[val]) {
+                document.getElementById('giftImageUrl').value = giftImages[val];
+                updatePreview('giftImageUrl', 'giftPreviewImg');
+            }
         };
 
         socket.on('status_update', (msg) => { document.getElementById('status').innerText = 'Status: ' + msg; });
