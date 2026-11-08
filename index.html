@@ -49,7 +49,6 @@
         </div>
     </div>
 
-    <!-- NEW DEFAULT UNBOUND USER SETTINGS CARD -->
     <div class="card" style="border: 1px solid #25f4ee;">
         <h3 style="color: #25f4ee;">DEFAULT UNBOUND NEW JOIN GREETING</h3>
         <small>Sound Assignment (Plays automatically for any non-bound user)</small>
@@ -193,17 +192,16 @@
         async function refreshOverlayImages() {
             try {
                 const res = await fetch('/get-overlay-images');
-                const files = await res.json();
+                let files = await res.json();
+                files.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+                
                 const options = `<option value="">Select overlay image...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join('');
                 
                 document.getElementById('userImageSelect').innerHTML = options;
                 document.getElementById('giftImageSelect').innerHTML = options;
                 document.getElementById('defaultImageSelect').innerHTML = options;
-                
-                alert(`Refreshed! Found ${files.length} overlay images in repo.`);
             } catch (e) {
                 console.error("Failed to refresh overlay images:", e);
-                alert("Failed to fetch images from GitHub repo.");
             }
         }
 
@@ -318,35 +316,49 @@
                     document.getElementById('defaultPreviewImg').style.display = 'block';
                 }
 
-                const allBoundUsers = [...new Set([...Object.keys(bindings), ...Object.keys(userImages)])];
+                let allBoundUsers = [...new Set([...Object.keys(bindings), ...Object.keys(userImages)])];
+                allBoundUsers.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
                 document.getElementById('userName').innerHTML = `<option value="">Bound Users...</option>` + allBoundUsers.map(u => `<option value="${u}">${u}</option>`).join('');
                 
-                document.getElementById('giftDropdown').innerHTML = `<option value="">Select a gift...</option>` + giftNamesRes.map(g => {
+                let giftNames = giftNamesRes || [];
+                giftNames.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+                document.getElementById('giftDropdown').innerHTML = `<option value="">Select a gift...</option>` + giftNames.map(g => {
                     const sound = giftBindings[g] ? ` [Sound: ${giftBindings[g]}]` : "";
                     const img = giftImages[g] ? ` [Img Set]` : "";
                     return `<option value="${g}">${g}${sound}${img}</option>`;
                 }).join('');
                 
-                const unbound = (usersRes.joined || []).filter(u => !bindings[u] && !userImages[u]);
+                let unbound = (usersRes.joined || []).filter(u => !bindings[u] && !userImages[u]);
+                unbound.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
                 document.getElementById('unboundUserSelect').innerHTML = `<option value="">Unbound Users...</option>` + unbound.map(u => `<option value="${u}">${u}</option>`).join('');
             } catch (e) { console.error("Init Error:", e); }
         }
 
         socket.on('status_update', (msg) => { document.getElementById('status').innerText = 'Status: ' + msg; });
-        socket.on('member_join', (data) => { appendToLog('log', `Joined: @${data.username}`); });
+        socket.on('member_join', (data) => { 
+            appendToLog('log', `Joined: @${data.username}`); 
+            initDashboard(); // Refresh dropdowns automatically when a new member joins
+        });
         socket.on('follow', (data) => {
             appendToLog('log', `Followed: @${data.username}`);
             new Audio('./sounds/follow.mp3').play().catch(e => console.error("Follow sound error:", e));
         });
-        socket.on('gift', (data) => { appendToLog('giftLog', `${data.giftName} - @${data.username}`); });
+        socket.on('gift', (data) => { 
+            appendToLog('giftLog', `${data.giftName} - @${data.username}`); 
+            initDashboard(); // Refresh gift dropdown automatically when a new gift arrives
+        });
 
         window.addEventListener('DOMContentLoaded', async () => {
             fetch('/get-sounds').then(r => r.json()).then(files => {
+                files.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
                 const options = `<option value="">Select sound...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join('');
                 document.getElementById('userFile').innerHTML = options;
                 document.getElementById('defaultSoundFile').innerHTML = options;
             });
-            fetch('/get-gift-sounds').then(r => r.json()).then(files => document.getElementById('giftFile').innerHTML = `<option value="">Select sound...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join(''));
+            fetch('/get-gift-sounds').then(r => r.json()).then(files => {
+                files.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+                document.getElementById('giftFile').innerHTML = `<option value="">Select sound...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join('');
+            });
             
             await refreshOverlayImages();
             await initDashboard();

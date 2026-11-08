@@ -43,6 +43,42 @@ let userImages = loadJSON(userImagesPath);
 let giftImages = loadJSON(giftImagesPath);
 let defaultSettings = loadJSON(defaultSettingsPath);
 
+// Helper to sort and save users alphabetically
+const addAndSortUser = (username) => {
+    if (!username) return;
+    const cleanUser = username.trim();
+    let users = [];
+    if (fs.existsSync(joinedUsersPath)) {
+        users = fs.readFileSync(joinedUsersPath, 'utf8')
+            .split('\n')
+            .map(u => u.trim())
+            .filter(Boolean);
+    }
+    if (!users.map(u => u.toLowerCase()).includes(cleanUser.toLowerCase())) {
+        users.push(cleanUser);
+        users.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+        fs.writeFileSync(joinedUsersPath, users.join('\n') + '\n');
+    }
+};
+
+// Helper to sort and save gifts alphabetically
+const addAndSortGift = (giftName) => {
+    if (!giftName) return;
+    const cleanGift = giftName.trim();
+    let gifts = [];
+    if (fs.existsSync(giftsTxtPath)) {
+        gifts = fs.readFileSync(giftsTxtPath, 'utf8')
+            .split('\n')
+            .map(g => g.trim())
+            .filter(Boolean);
+    }
+    if (!gifts.map(g => g.toLowerCase()).includes(cleanGift.toLowerCase())) {
+        gifts.push(cleanGift);
+        gifts.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+        fs.writeFileSync(giftsTxtPath, gifts.join('\n') + '\n');
+    }
+};
+
 let tiktokConnection = null;
 
 io.on('connection', (socket) => {
@@ -91,6 +127,9 @@ io.on('connection', (socket) => {
             tiktokConnection.on('gift', (d) => {
                 const giftName = d.giftName;
                 const user = d.uniqueId;
+                
+                addAndSortGift(giftName);
+
                 const soundFile = giftBindings[giftName];
                 const imageUrl = giftImages[giftName] || '';
 
@@ -106,10 +145,7 @@ io.on('connection', (socket) => {
             tiktokConnection.on('follow', (d) => io.emit('follow', { username: d.uniqueId }));
 
             tiktokConnection.on('member', (d) => {
-                const users = fs.existsSync(joinedUsersPath) ? fs.readFileSync(joinedUsersPath, 'utf8') : "";
-                if (!users.includes(d.uniqueId)) {
-                    fs.appendFileSync(joinedUsersPath, d.uniqueId + '\n');
-                }
+                addAndSortUser(d.uniqueId);
                 io.emit('member_join', { username: d.uniqueId });
 
                 const lowerUser = d.uniqueId.toLowerCase();
@@ -159,6 +195,7 @@ app.get('/get-overlay-images', async (req, res) => {
             const imageFiles = data
                 .filter(item => item.type === 'file' && /\.(png|jpg|jpeg|gif|webp)$/i.test(item.name))
                 .map(item => item.name);
+            imageFiles.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
             return res.json(imageFiles);
         }
     } catch (e) {
@@ -167,23 +204,44 @@ app.get('/get-overlay-images', async (req, res) => {
 
     fs.readdir(overlaysDir, (err, files) => {
         if (err) return res.json([]);
-        res.json(files.filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f)));
+        const filtered = files.filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f));
+        filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+        res.json(filtered);
     });
 });
 
 app.get('/get-gift-names', (req, res) => {
     fs.readFile(giftsTxtPath, 'utf8', (err, data) => {
-        res.json(data ? [...new Set(data.split('\n').map(g => g.trim()).filter(Boolean))] : []);
+        const gifts = data ? [...new Set(data.split('\n').map(g => g.trim()).filter(Boolean))] : [];
+        gifts.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+        res.json(gifts);
     });
 });
 
 app.get('/get-user-categories', (req, res) => {
     fs.readFile(joinedUsersPath, 'utf8', (err, data) => {
-        res.json({ joined: data ? [...new Set(data.split('\n').map(u => u.trim()).filter(Boolean))] : [] });
+        const users = data ? [...new Set(data.split('\n').map(u => u.trim()).filter(Boolean))] : [];
+        users.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+        res.json({ joined: users });
     });
 });
 
-app.get('/get-sounds', (req, res) => fs.readdir(soundsDir, (err, f) => res.json(err ? [] : f.filter(x => x.endsWith('.mp3')))));
-app.get('/get-gift-sounds', (req, res) => fs.readdir(giftSoundsDir, (err, f) => res.json(err ? [] : f.filter(x => x.endsWith('.mp3')))));
+app.get('/get-sounds', (req, res) => {
+    fs.readdir(soundsDir, (err, f) => {
+        if (err) return res.json([]);
+        const sounds = f.filter(x => x.endsWith('.mp3'));
+        sounds.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+        res.json(sounds);
+    });
+});
+
+app.get('/get-gift-sounds', (req, res) => {
+    fs.readdir(giftSoundsDir, (err, f) => {
+        if (err) return res.json([]);
+        const sounds = f.filter(x => x.endsWith('.mp3'));
+        sounds.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+        res.json(sounds);
+    });
+});
 
 http.listen(3000, () => console.log('StreamFX Live running on http://localhost:3000'));
