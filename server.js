@@ -184,30 +184,96 @@ app.get('/get-user-images', (req, res) => res.json(userImages));
 app.get('/get-gift-images', (req, res) => res.json(giftImages));
 app.get('/get-default-settings', (req, res) => res.json(defaultSettings));
 
-// Fetch overlay images from GitHub Repository API with local fallback
-app.get('/get-overlay-images', async (req, res) => {
+// Helper for recursive GitHub contents traversal
+async function fetchGitHubRepoImages(dirPath = '') {
+    let results = [];
     try {
-        const response = await fetch('https://api.github.com/repos/ianjonesauthor/StreamFX/contents/overlays', {
+        const response = await fetch(`https://api.github.com/repos/ianjonesauthor/StreamFX/contents/${dirPath}`, {
             headers: { 'User-Agent': 'StreamFX-Live-App' }
         });
         if (response.ok) {
-            const data = await response.json();
-            const imageFiles = data
-                .filter(item => item.type === 'file' && /\.(png|jpg|jpeg|gif|webp)$/i.test(item.name))
-                .map(item => item.name);
-            imageFiles.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
-            return res.json(imageFiles);
+            const items = await response.json();
+            if (Array.isArray(items)) {
+                for (const item of items) {
+                    if (item.type === 'file' && /\.(png|jpg|jpeg|gif|webp)$/i.test(item.name)) {
+                        // Store path relative to repo root or path usable by raw URL
+                        results.push({
+                            name: item.name,
+                            path: item.path,
+                            download_url: item.download_url
+                        });
+                    } else if (item.type === 'dir') {
+                        const subItems = await fetchGitHubRepoImages(item.path);
+                        results = results.concat(subItems);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.log(`GitHub API traversal error for ${dirPath}:`, e.message);
+    }
+    return results;
+}
+
+// Helper for recursive local directory traversal
+function getLocalRepoImages(dir, baseDir = dir) {
+    let results = [];
+    try {
+        if (!fs.existsSync(dir)) return results;
+        const list = fs.readdirSync(dir);
+        list.forEach(file => {
+            const filePath = path.join(dir, file);
+            const stat = fs.statSync(filePath);
+            if (stat && stat.isDirectory()) {
+                results = results.concat(getLocalRepoImages(filePath, baseDir));
+            } else {
+                if (/\.(png|jpg|jpeg|gif|webp)$/i.test(file)) {
+                    const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
+                    results.push({
+                        name: file,
+                        relativePath: relativePath,
+                        fullPath: filePath
+                    });
+                }
+            }
+        });
+    } catch (e) {
+        console.log("Local directory scan error:", e.message);
+    }
+    return results;
+}
+
+// Fetch all overlay and gift images recursively from GitHub API with local fallback
+app.get('/get-overlay-images', async (req, res) => {
+    let imageList = [];
+    try {
+        const ghImages = await fetchGitHubRepoImages('');
+        if (ghImages.length > 0) {
+            imageList = ghImages.map(img => ({
+                label: img.path, // e.g. "overlays/rose.png" or "tiktok_gift_images/gifts/lion.webp"
+                url: `https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/${img.path}`
+            }));
         }
     } catch (e) {
         console.log("GitHub API fetch fallback triggered:", e.message);
     }
 
-    fs.readdir(overlaysDir, (err, files) => {
-        if (err) return res.json([]);
-        const filtered = files.filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f));
-        filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
-        res.json(filtered);
-    });
+    if (imageList.length === 0) {
+        // Fallback to scanning local workspace recursively
+        const localFiles = getLocalRepoImages(__dirname);
+        imageList = localFiles.map(f => {
+            // Exclude node_modules or system folders if caught
+            if (f.relativePath.startsWith('node_modules')) return null;
+            return {
+                label: f.relativePath,
+                url: `./${f.relativePath}`
+            };
+        }).filter(Boolean);
+    }
+
+    // Sort alphabetically by path/label
+    imageList.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'accent' }));
+    res.json(imageList);
 });
 
 app.get('/get-gift-names', (req, res) => {

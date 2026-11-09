@@ -104,7 +104,7 @@
         <div class="image-preview-container">
             <div style="flex-grow: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <small style="margin:0;">Overlay Image (From GitHub Repo Overlays)</small>
+                    <small style="margin:0;">Overlay & Gift Images (Repo Folders)</small>
                     <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
                 </div>
                 <select id="userImageSelect" onchange="selectOverlayImage('userImageSelect', 'userImageUrl', 'userPreviewImg')">
@@ -136,7 +136,7 @@
         <div class="image-preview-container">
             <div style="flex-grow: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <small style="margin:0;">Overlay Image (From GitHub Repo Overlays)</small>
+                    <small style="margin:0;">Overlay & Gift Images (Repo Folders)</small>
                     <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
                 </div>
                 <select id="giftImageSelect" onchange="selectOverlayImage('giftImageSelect', 'giftImageUrl', 'giftPreviewImg')">
@@ -173,12 +173,11 @@
         function stopPreview() { if(currentAudio) currentAudio.pause(); }
 
         function selectOverlayImage(selectId, inputId, imgId) {
-            const filename = document.getElementById(selectId).value;
+            const rawUrl = document.getElementById(selectId).value;
             const inputElement = document.getElementById(inputId);
             const imgElement = document.getElementById(imgId);
 
-            if (filename) {
-                const rawUrl = `https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/${filename}`;
+            if (rawUrl) {
                 inputElement.value = rawUrl;
                 imgElement.src = rawUrl;
                 imgElement.style.display = 'block';
@@ -192,16 +191,19 @@
         async function refreshOverlayImages() {
             try {
                 const res = await fetch('/get-overlay-images');
-                let files = await res.json();
-                files.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
+                const images = await res.json(); // Array of { label, url }
                 
-                const options = `<option value="">Select overlay image...</option>` + files.map(f => `<option value="${f}">${f}</option>`).join('');
+                const options = `<option value="">Select repo image (.png, .webp, etc.)...</option>` + 
+                    images.map(img => `<option value="${img.url}">${img.label}</option>`).join('');
                 
                 document.getElementById('userImageSelect').innerHTML = options;
                 document.getElementById('giftImageSelect').innerHTML = options;
                 document.getElementById('defaultImageSelect').innerHTML = options;
+                
+                alert(`Refreshed! Found ${images.length} total images in repo and subfolders.`);
             } catch (e) {
-                console.error("Failed to refresh overlay images:", e);
+                console.error("Failed to refresh repo images:", e);
+                alert("Failed to fetch images from repo.");
             }
         }
 
@@ -337,7 +339,7 @@
         socket.on('status_update', (msg) => { document.getElementById('status').innerText = 'Status: ' + msg; });
         socket.on('member_join', (data) => { 
             appendToLog('log', `Joined: @${data.username}`); 
-            initDashboard(); // Refresh dropdowns automatically when a new member joins
+            initDashboard(); 
         });
         socket.on('follow', (data) => {
             appendToLog('log', `Followed: @${data.username}`);
@@ -345,7 +347,7 @@
         });
         socket.on('gift', (data) => { 
             appendToLog('giftLog', `${data.giftName} - @${data.username}`); 
-            initDashboard(); // Refresh gift dropdown automatically when a new gift arrives
+            initDashboard(); 
         });
 
         window.addEventListener('DOMContentLoaded', async () => {
