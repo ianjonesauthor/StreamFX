@@ -138,7 +138,7 @@ io.on('connection', (socket) => {
                     username: user,
                     text: `Sent ${giftName}!`,
                     imageUrl: imageUrl,
-                    soundUrl: soundFile ? soundFile : null
+                    soundUrl: soundFile ? (soundFile.startsWith('http') || soundFile.startsWith('./') ? soundFile : `./gift_sounds/${soundFile}`) : null
                 });
             });
 
@@ -157,7 +157,7 @@ io.on('connection', (socket) => {
                         username: d.uniqueId,
                         text: `Joined the stream!`,
                         imageUrl: imageUrl,
-                        soundUrl: soundFile ? soundFile : null
+                        soundUrl: soundFile ? (soundFile.startsWith('http') || soundFile.startsWith('./') ? soundFile : `./sounds/${soundFile}`) : null
                     });
                 }
             });
@@ -184,8 +184,8 @@ app.get('/get-user-images', (req, res) => res.json(userImages));
 app.get('/get-gift-images', (req, res) => res.json(giftImages));
 app.get('/get-default-settings', (req, res) => res.json(defaultSettings));
 
-// Helper for recursive GitHub contents traversal (Images)
-async function fetchGitHubRepoImages(dirPath = '') {
+// Recursive GitHub Repo Traversal for Images and Audio
+async function fetchGitHubRepoAssets(dirPath = '', extensions) {
     let results = [];
     try {
         const response = await fetch(`https://api.github.com/repos/ianjonesauthor/StreamFX/contents/${dirPath}`, {
@@ -195,23 +195,27 @@ async function fetchGitHubRepoImages(dirPath = '') {
             const items = await response.json();
             if (Array.isArray(items)) {
                 for (const item of items) {
-                    if (item.type === 'file' && /\.(png|jpg|jpeg|gif|webp)$/i.test(item.name)) {
-                        results.push({ name: item.name, path: item.path, download_url: item.download_url });
+                    if (item.type === 'file' && extensions.test(item.name)) {
+                        results.push({
+                            name: item.name,
+                            path: item.path,
+                            download_url: item.download_url
+                        });
                     } else if (item.type === 'dir') {
-                        const subItems = await fetchGitHubRepoImages(item.path);
+                        const subItems = await fetchGitHubRepoAssets(item.path, extensions);
                         results = results.concat(subItems);
                     }
                 }
             }
         }
     } catch (e) {
-        console.log(`GitHub API image traversal error for ${dirPath}:`, e.message);
+        console.log(`GitHub API traversal error for ${dirPath}:`, e.message);
     }
     return results;
 }
 
-// Helper for recursive local directory traversal (Images)
-function getLocalRepoImages(dir, baseDir = dir) {
+// Recursive Local Directory Traversal
+function getLocalRepoAssets(dir, extensions, baseDir = dir) {
     let results = [];
     try {
         if (!fs.existsSync(dir)) return results;
@@ -220,13 +224,15 @@ function getLocalRepoImages(dir, baseDir = dir) {
             const filePath = path.join(dir, file);
             const stat = fs.statSync(filePath);
             if (stat && stat.isDirectory()) {
-                results = results.concat(getLocalRepoImages(filePath, baseDir));
+                results = results.concat(getLocalRepoAssets(filePath, extensions, baseDir));
             } else {
-                if (/\.(png|jpg|jpeg|gif|webp)$/i.test(file)) {
+                if (extensions.test(file)) {
                     const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
-                    if (!relativePath.startsWith('node_modules')) {
-                        results.push({ name: file, relativePath: relativePath });
-                    }
+                    results.push({
+                        name: file,
+                        relativePath: relativePath,
+                        fullPath: filePath
+                    });
                 }
             }
         });
@@ -236,37 +242,12 @@ function getLocalRepoImages(dir, baseDir = dir) {
     return results;
 }
 
-// Helper for recursive local directory traversal (Audio: .mp3, .m4a)
-function getLocalRepoAudio(dir, baseDir = dir) {
-    let results = [];
-    try {
-        if (!fs.existsSync(dir)) return results;
-        const list = fs.readdirSync(dir);
-        list.forEach(file => {
-            const filePath = path.join(dir, file);
-            const stat = fs.statSync(filePath);
-            if (stat && stat.isDirectory()) {
-                results = results.concat(getLocalRepoAudio(filePath, baseDir));
-            } else {
-                if /\.(mp3|m4a)$/i.test(file) {
-                    const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
-                    if (!relativePath.startsWith('node_modules')) {
-                        results.push({ name: file, relativePath: relativePath });
-                    }
-                }
-            }
-        });
-    } catch (e) {
-        console.log("Local audio scan error:", e.message);
-    }
-    return results;
-}
-
-// Fetch all overlay and gift images recursively
+// API: Get Overlay & Gift Images
 app.get('/get-overlay-images', async (req, res) => {
     let imageList = [];
+    const extRegex = /\.(png|jpg|jpeg|gif|webp)$/i;
     try {
-        const ghImages = await fetchGitHubRepoImages('');
+        const ghImages = await fetchGitHubRepoAssets('', extRegex);
         if (ghImages.length > 0) {
             imageList = ghImages.map(img => ({
                 label: img.path,
@@ -274,41 +255,59 @@ app.get('/get-overlay-images', async (req, res) => {
             }));
         }
     } catch (e) {
-        console.log("GitHub API fetch fallback triggered:", e.message);
+        console.log("GitHub API image fetch fallback triggered:", e.message);
     }
 
     if (imageList.length === 0) {
-        const localFiles = getLocalRepoImages(__dirname);
-        imageList = localFiles.map(f => ({
-            label: f.relativePath,
-            url: `./${f.relativePath}`
-        }));
+        const localFiles = getLocalRepoAssets(__dirname, extRegex);
+        imageList = localFiles.map(f => {
+            if (f.relativePath.startsWith('node_modules')) return null;
+            return {
+                label: f.relativePath,
+                url: `./${f.relativePath}`
+            };
+        }).filter(Boolean);
     }
 
     imageList.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'accent' }));
     res.json(imageList);
 });
 
-// Fetch all audio files (.mp3, .m4a) recursively from sounds folder & repo
-app.get('/get-sounds', (req, res) => {
-    const localAudios = getLocalRepoAudio(soundsDir, __dirname);
-    const audioList = localAudios.map(f => ({
-        label: f.relativePath, // e.g. "sounds/cheer.mp3" or "sounds/sub/alert.m4a"
-        url: `./${f.relativePath}`
-    }));
+// Helper for Audio API endpoints (sounds & gift_sounds)
+async function handleAudioFetch(req, res, targetFolder) {
+    let audioList = [];
+    const extRegex = /\.(mp3|m4a)$/i;
+    try {
+        const ghAudio = await fetchGitHubRepoAssets(targetFolder, extRegex);
+        if (ghAudio.length > 0) {
+            audioList = ghAudio.map(a => ({
+                label: a.path,
+                url: `https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/${a.path}`
+            }));
+        }
+    } catch (e) {
+        console.log(`GitHub API audio fetch fallback for ${targetFolder}:`, e.message);
+    }
+
+    if (audioList.length === 0) {
+        const localDir = path.join(__dirname, targetFolder);
+        const localFiles = getLocalRepoAssets(localDir, extRegex, path.join(__dirname));
+        audioList = localFiles.map(f => ({
+            label: f.relativePath,
+            url: `./${f.relativePath}`
+        }));
+    }
+
     audioList.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'accent' }));
     res.json(audioList);
+}
+
+app.get('/get-sounds', async (req, res) => {
+    await handleAudioFetch(req, res, 'sounds');
 });
 
-// Fetch all gift audio files (.mp3, .m4a) recursively from gift_sounds folder & repo
-app.get('/get-gift-sounds', (req, res) => {
-    const localAudios = getLocalRepoAudio(giftSoundsDir, __dirname);
-    const audioList = localAudios.map(f => ({
-        label: f.relativePath, // e.g. "gift_sounds/rose.mp3"
-        url: `./${f.relativePath}`
-    }));
-    audioList.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'accent' }));
-    res.json(audioList);
+app.get('/get-gift-sounds', async (req, res) => {
+    await handleAudioFetch(req, res, 'gift_sounds');
 });
 
 app.get('/get-gift-names', (req, res) => {
