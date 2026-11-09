@@ -1,18 +1,18 @@
 {
-  "hellosausagebooks": "what-the-dog-doin.mp3",
-  "mario5ive": "marioenteredchat.mp3",
-  "vickie_books": "vickigreeting.mp3",
-  "jenjen69300": "jenjenenters.mp3",
+  "hellosausagebooks": "./sounds/new sounds/139-item-catch.mp3",
+  "mario5ive": "./sounds/marioenteredchat.mp3",
+  "vickie_books": "./sounds/vickigreeting.mp3",
+  "jenjen69300": "./sounds/jenjenenters.mp3",
   "sirflanksalot_71": "SirFlanksAlot71.mp3",
   "imjonesauthor": "nuke.mp3",
   "doom907": "nuke.mp3",
   "missmeanface": "dexter-meme.mp3",
-  "yummyzigzag4": "hub-intro-sound.mp3",
+  "yummyzigzag4": "./sounds/new sounds/jarvis-carplay-connected.mp3",
   "quietgrinds": "gamergirl.mp3",
-  "thatcanadiangamergirl": "jenjenenters.mp3",
+  "thatcanadiangamergirl": "./sounds/gamergirl.mp3",
   "thatsdaddyv2you": "rizz-walk.mp3",
-  "zek39163": "hee-hee_MJ.mp3",
-  "bra_wash": "yeah-boiii-i-i-i.mp3",
-  "sherriberry351": "dinosaur-rawr.mp3",
-  "gnarpaws": "rizz-walk.mp3"
+  "zek39163": "./sounds/new sounds/fbi-open-up-sfx.mp3",
+  "bra_wash": "./sounds/new sounds/sexy-mp3.mp3",
+  "sherriberry351": "./sounds/new sounds/snore-mimimimimimi.mp3",
+  "gnarpaws": "./sounds/new sounds/arigato-meme-tokyo-leateq.mp3"
 }

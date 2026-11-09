@@ -1,7 +1,12 @@
 {
-  "bra_wash": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/brawash.jpg",
-  "jenjen69300": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/jenjen.png",
-  "thatcanadiangamergirl": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/cgg.png",
-  "hellosausagebooks": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/atf.png",
-  "zek39163": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/atf.png"
+  "bra_wash": "./overlays/brawash.jpg",
+  "jenjen69300": "./overlays/jenjen.png",
+  "thatcanadiangamergirl": "./overlays/atf.png",
+  "hellosausagebooks": "./overlays/atf.png",
+  "zek39163": "./overlays/atf.png",
+  "gnarpaws": "./overlays/TikTok.png",
+  "mario5ive": "./overlays/atf.png",
+  "vickie_books": "./overlays/atf.png",
+  "yummyzigzag4": "./overlays/atf.png",
+  "sherriberry351": "./overlays/Gamepad.png"
 }

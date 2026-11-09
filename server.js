@@ -184,7 +184,7 @@ app.get('/get-user-images', (req, res) => res.json(userImages));
 app.get('/get-gift-images', (req, res) => res.json(giftImages));
 app.get('/get-default-settings', (req, res) => res.json(defaultSettings));
 
-// Recursive GitHub Repo Traversal for Images and Audio
+// Recursive GitHub Repo Traversal
 async function fetchGitHubRepoAssets(dirPath = '', extensions) {
     let results = [];
     try {
@@ -228,11 +228,13 @@ function getLocalRepoAssets(dir, extensions, baseDir = dir) {
             } else {
                 if (extensions.test(file)) {
                     const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
-                    results.push({
-                        name: file,
-                        relativePath: relativePath,
-                        fullPath: filePath
-                    });
+                    if (!relativePath.startsWith('node_modules')) {
+                        results.push({
+                            name: file,
+                            relativePath: relativePath,
+                            fullPath: filePath
+                        });
+                    }
                 }
             }
         });
@@ -260,20 +262,17 @@ app.get('/get-overlay-images', async (req, res) => {
 
     if (imageList.length === 0) {
         const localFiles = getLocalRepoAssets(__dirname, extRegex);
-        imageList = localFiles.map(f => {
-            if (f.relativePath.startsWith('node_modules')) return null;
-            return {
-                label: f.relativePath,
-                url: `./${f.relativePath}`
-            };
-        }).filter(Boolean);
+        imageList = localFiles.map(f => ({
+            label: f.relativePath,
+            url: `./${f.relativePath}`
+        }));
     }
 
     imageList.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'accent' }));
     res.json(imageList);
 });
 
-// Helper for Audio API endpoints (sounds & gift_sounds)
+// Helper for Audio API endpoints (sounds & gift_sounds scanning all subfolders)
 async function handleAudioFetch(req, res, targetFolder) {
     let audioList = [];
     const extRegex = /\.(mp3|m4a)$/i;
