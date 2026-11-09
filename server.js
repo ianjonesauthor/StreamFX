@@ -127,13 +127,14 @@ io.on('connection', (socket) => {
             tiktokConnection.on('gift', (d) => {
                 const giftName = d.giftName;
                 const user = d.uniqueId;
+                const avatar = d.profilePictureUrl || '';
                 
                 addAndSortGift(giftName);
 
                 const soundFile = giftBindings[giftName];
-                const imageUrl = giftImages[giftName] || '';
+                const imageUrl = giftImages[giftName] || avatar || '';
 
-                io.emit('gift', { giftName, username: user });
+                io.emit('gift', { giftName, username: user, avatar });
                 io.emit('trigger_alert', {
                     username: user,
                     text: `Sent ${giftName}!`,
@@ -142,19 +143,34 @@ io.on('connection', (socket) => {
                 });
             });
 
-            tiktokConnection.on('follow', (d) => io.emit('follow', { username: d.uniqueId }));
+            tiktokConnection.on('follow', (d) => {
+                const user = d.uniqueId;
+                const avatar = d.profilePictureUrl || '';
+                const soundFile = defaultSettings.defaultFollowSound || '';
+                const imageUrl = defaultSettings.defaultImageUrl || avatar || '';
+
+                io.emit('follow', { username: user, avatar });
+                io.emit('trigger_alert', {
+                    username: user,
+                    text: `Followed the stream!`,
+                    imageUrl: imageUrl,
+                    soundUrl: soundFile ? (soundFile.startsWith('http') || soundFile.startsWith('./') ? soundFile : `./sounds/${soundFile}`) : null
+                });
+            });
 
             tiktokConnection.on('member', (d) => {
-                addAndSortUser(d.uniqueId);
-                io.emit('member_join', { username: d.uniqueId });
+                const user = d.uniqueId;
+                const avatar = d.profilePictureUrl || '';
+                addAndSortUser(user);
+                io.emit('member_join', { username: user, avatar });
 
-                const lowerUser = d.uniqueId.toLowerCase();
+                const lowerUser = user.toLowerCase();
                 const soundFile = userBindings[lowerUser] || defaultSettings.defaultSound || '';
-                const imageUrl = userImages[lowerUser] || defaultSettings.defaultImageUrl || '';
+                const imageUrl = userImages[lowerUser] || defaultSettings.defaultImageUrl || avatar || '';
 
                 if (soundFile || imageUrl) {
                     io.emit('trigger_alert', {
-                        username: d.uniqueId,
+                        username: user,
                         text: `Joined the stream!`,
                         imageUrl: imageUrl,
                         soundUrl: soundFile ? (soundFile.startsWith('http') || soundFile.startsWith('./') ? soundFile : `./sounds/${soundFile}`) : null
@@ -196,11 +212,7 @@ async function fetchGitHubRepoAssets(dirPath = '', extensions) {
             if (Array.isArray(items)) {
                 for (const item of items) {
                     if (item.type === 'file' && extensions.test(item.name)) {
-                        results.push({
-                            name: item.name,
-                            path: item.path,
-                            download_url: item.download_url
-                        });
+                        results.push({ name: item.name, path: item.path, download_url: item.download_url });
                     } else if (item.type === 'dir') {
                         const subItems = await fetchGitHubRepoAssets(item.path, extensions);
                         results = results.concat(subItems);
@@ -229,11 +241,7 @@ function getLocalRepoAssets(dir, extensions, baseDir = dir) {
                 if (extensions.test(file)) {
                     const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
                     if (!relativePath.startsWith('node_modules')) {
-                        results.push({
-                            name: file,
-                            relativePath: relativePath,
-                            fullPath: filePath
-                        });
+                        results.push({ name: file, relativePath: relativePath });
                     }
                 }
             }
@@ -272,7 +280,7 @@ app.get('/get-overlay-images', async (req, res) => {
     res.json(imageList);
 });
 
-// Helper for Audio API endpoints (sounds & gift_sounds scanning all subfolders)
+// Helper for Audio API endpoints
 async function handleAudioFetch(req, res, targetFolder) {
     let audioList = [];
     const extRegex = /\.(mp3|m4a)$/i;

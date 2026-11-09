@@ -49,22 +49,33 @@
         </div>
     </div>
 
+    <!-- DEFAULT UNBOUND NEW JOIN & FOLLOW GREETING CARD -->
     <div class="card" style="border: 1px solid #25f4ee;">
-        <h3 style="color: #25f4ee;">DEFAULT UNBOUND NEW JOIN GREETING</h3>
+        <h3 style="color: #25f4ee;">DEFAULT UNBOUND NEW JOIN & FOLLOW GREETING</h3>
+        
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <small style="margin:0;">Sound Assignment (.mp3, .m4a)</small>
+            <small style="margin:0;">Default User Join Sound (.mp3, .m4a)</small>
             <button onclick="refreshSounds()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Sounds</button>
         </div>
-        <select id="defaultSoundFile"><option value="">Select sound...</option></select>
+        <select id="defaultSoundFile"><option value="">Select join sound...</option></select>
         <div class="controls">
-            <button onclick="previewAudioElement('defaultSoundFile')" style="background: #444;">▶️ PLAY</button>
+            <button onclick="previewAudioElement('defaultSoundFile')" style="background: #444;">▶️ PLAY JOIN SOUND</button>
             <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
         </div>
 
-        <div class="image-preview-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 5px;">
+            <small style="margin:0;">Default New Follower Audio (.mp3, .m4a)</small>
+        </div>
+        <select id="defaultFollowSoundFile"><option value="">Select follow sound...</option></select>
+        <div class="controls">
+            <button onclick="previewAudioElement('defaultFollowSoundFile')" style="background: #444;">▶️ PLAY FOLLOW SOUND</button>
+            <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
+        </div>
+
+        <div class="image-preview-container" style="margin-top: 15px;">
             <div style="flex-grow: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <small style="margin:0;">Greeting Overlay Image</small>
+                    <small style="margin:0;">Greeting Overlay Image (or user avatar fallback)</small>
                     <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
                 </div>
                 <select id="defaultImageSelect" onchange="selectAsset('defaultImageSelect', 'defaultImageUrl', 'defaultPreviewImg')">
@@ -80,10 +91,12 @@
             </div>
         </div>
 
-        <button onclick="saveDefaultSettings()" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE DEFAULT NEW JOIN SETTINGS</button>
-        <button onclick="testAlert('default')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST DEFAULT GREETING ALERT</button>
+        <button onclick="saveDefaultSettings()" style="background: #25f4ee; color: #000; margin-top: 15px;">SAVE DEFAULT JOIN & FOLLOW SETTINGS</button>
+        <button onclick="testAlert('default')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST DEFAULT JOIN ALERT</button>
+        <button onclick="testAlert('follow')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST DEFAULT FOLLOW ALERT</button>
     </div>
 
+    <!-- BIND USER CARD -->
     <div class="card">
         <h3>BIND USER TO SOUND & IMAGE</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -130,6 +143,7 @@
         <button onclick="testAlert('user')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST USER ALERT</button>
     </div>
 
+    <!-- BIND GIFT CARD -->
     <div class="card">
         <h3>BIND GIFT TO SOUND & IMAGE</h3>
         <select id="giftDropdown"><option value="">Select a gift...</option></select>
@@ -223,6 +237,7 @@
                 
                 document.getElementById('userFile').innerHTML = options;
                 document.getElementById('defaultSoundFile').innerHTML = options;
+                document.getElementById('defaultFollowSoundFile').innerHTML = options;
             } catch (e) {
                 console.error("Failed to refresh sounds:", e);
             }
@@ -259,11 +274,12 @@
 
         function saveDefaultSettings() {
             const defaultSound = document.getElementById('defaultSoundFile').value;
+            const defaultFollowSound = document.getElementById('defaultFollowSoundFile').value;
             const defaultImageUrl = document.getElementById('defaultImageUrl').value.trim();
 
-            defaultSettings = { defaultSound, defaultImageUrl };
+            defaultSettings = { defaultSound, defaultFollowSound, defaultImageUrl };
             socket.emit('SYNC_DEFAULT_SETTINGS', defaultSettings);
-            alert("Default Unbound Join Settings Saved!");
+            alert("Default Join & Follow Settings Saved!");
         }
 
         function saveBinding(type) {
@@ -302,6 +318,16 @@
                 socket.emit('trigger_alert', {
                     username: "NewViewer",
                     text: `Joined the stream! (Default Greeting)`,
+                    imageUrl: imageUrl,
+                    soundUrl: soundUrl || null
+                });
+            } else if (type === 'follow') {
+                const soundUrl = document.getElementById('defaultFollowSoundFile').value;
+                const imageUrl = document.getElementById('defaultImageUrl').value.trim();
+
+                socket.emit('trigger_alert', {
+                    username: "NewFollower",
+                    text: `Followed the stream!`,
                     imageUrl: imageUrl,
                     soundUrl: soundUrl || null
                 });
@@ -345,6 +371,9 @@
                 
                 if (defaultSettings.defaultSound) {
                     document.getElementById('defaultSoundFile').value = defaultSettings.defaultSound;
+                }
+                if (defaultSettings.defaultFollowSound) {
+                    document.getElementById('defaultFollowSoundFile').value = defaultSettings.defaultFollowSound;
                 }
                 if (defaultSettings.defaultImageUrl) {
                     document.getElementById('defaultImageUrl').value = defaultSettings.defaultImageUrl;
