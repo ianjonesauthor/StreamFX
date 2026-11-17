@@ -30,7 +30,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            animation: fadeInOut 4s ease-in-out forwards;
+            animation: fadeInOut var(--anim-duration, 6s) ease-in-out forwards;
             opacity: 0;
         }
 
@@ -80,6 +80,13 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // ==========================================
+        // OVERLAY TIMING CONFIGURATION (in milliseconds)
+        // Change this value to make alerts stay on screen longer or shorter.
+        // e.g., 6000 = 6 seconds, 10000 = 10 seconds, 15000 = 15 seconds.
+        // ==========================================
+        const ALERT_DURATION = 6000; 
+
         const socket = io();
         const alertContainer = document.getElementById('alert-container');
         
@@ -105,13 +112,13 @@
 
             const box = document.createElement('div');
             box.className = 'alert-box';
+            box.style.setProperty('--anim-duration', (ALERT_DURATION / 1000) + 's');
 
             // Add image if URL exists
             if (data.imageUrl && data.imageUrl.trim() !== '') {
                 const img = document.createElement('img');
                 img.src = data.imageUrl;
                 img.className = 'alert-image';
-                // Fallback if image fails to load
                 img.onerror = () => { img.style.display = 'none'; };
                 box.appendChild(img);
             }
@@ -139,12 +146,12 @@
                 audio.play().catch(e => console.log("Audio play blocked or missing:", e));
             }
 
-            // Remove box after animation completes (6 seconds)
+            // Remove box after configured duration completes
             setTimeout(() => {
                 alertContainer.innerHTML = '';
                 isPlaying = false;
                 processQueue(); // process next in queue
-            }, 6000);
+            }, ALERT_DURATION);
         }
     </script>
 </body>

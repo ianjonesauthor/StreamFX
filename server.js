@@ -5,9 +5,11 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http, { cors: { origin: "*" } });
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const path = require('path');
+const { exec } = require('child_process');
 
 app.use(express.static(__dirname));
 app.use(express.static('public'));
+app.use(express.json());
 
 // Directories
 const boundUsersDir = path.join(__dirname, 'bound_users');
@@ -190,6 +192,19 @@ io.on('connection', (socket) => {
             tiktokConnection = null;
             io.emit('status_update', 'Disconnected');
         }
+    });
+});
+
+// GitHub Auto-Sync API Endpoint
+app.post('/git-sync', (req, res) => {
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const cmd = `git add . && git commit -m "Auto-sync StreamFX Live (${timestamp})" || true; git push origin main`;
+
+    exec(cmd, { cwd: __dirname }, (error, stdout, stderr) => {
+        if (error && !stdout.includes('nothing to commit')) {
+            return res.json({ success: false, message: `Sync failed: ${stderr || error.message}` });
+        }
+        res.json({ success: true, message: 'Successfully synced StreamFX Live folder to GitHub!' });
     });
 });
 

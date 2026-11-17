@@ -24,6 +24,14 @@
 <body>
     <div id="unlockOverlay"><button onclick="startApp()" style="width: 250px; height: 70px; font-size: 20px;">CLICK TO START AUDIO</button></div>
 
+    <!-- GITHUB SYNC CARD -->
+    <div class="card" style="border: 1px solid #238636;">
+        <h3 style="color: #3fb950; margin-top: 0;">GITHUB REPO SYNC</h3>
+        <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Instantly stage, commit, and push your entire local StreamFX Live folder (bindings, images, lists) to GitHub.</p>
+        <button id="gitSyncBtn" onclick="syncToGitHub()" style="background: #238636; color: white;">🚀 SYNC FOLDER TO GITHUB</button>
+        <div id="gitStatus" style="margin-top: 8px; font-size: 0.9rem; font-weight: bold;"></div>
+    </div>
+
     <div class="card">
         <h2>StreamFX Live</h2>
         <button onclick="document.getElementById('rankModal').style.display='block'" style="background: #ffa500; color: #000;">VIEW RANK SYSTEM</button>
@@ -186,6 +194,28 @@
         const socket = io();
         let bindings = {}; let giftBindings = {}; let userImages = {}; let giftImages = {}; let defaultSettings = {}; let currentAudio = null;
         function startApp() { document.getElementById('unlockOverlay').style.display = 'none'; }
+
+        async function syncToGitHub() {
+            const btn = document.getElementById('gitSyncBtn');
+            const status = document.getElementById('gitStatus');
+            btn.disabled = true;
+            btn.textContent = 'SYNCING TO GITHUB...';
+            status.style.color = '#ffa500';
+            status.textContent = 'Staging, committing, and pushing...';
+
+            try {
+                const res = await fetch('/git-sync', { method: 'POST' });
+                const data = await res.json();
+                status.style.color = data.success ? '#3fb950' : '#f85149';
+                status.textContent = data.message;
+            } catch (e) {
+                status.style.color = '#f85149';
+                status.textContent = 'Sync failed: Server connection error.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 SYNC FOLDER TO GITHUB';
+            }
+        }
 
         function previewAudioElement(selectId) {
             stopPreview();
