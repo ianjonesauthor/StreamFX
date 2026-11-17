@@ -407,7 +407,13 @@
             currentAudio.play().catch(e => console.error("Preview blocked:", e));
         }
 
-        function stopPreview() { if(currentAudio) currentAudio.pause(); }
+        function stopPreview() { 
+            if (currentAudio) { 
+                currentAudio.pause(); 
+                currentAudio.currentTime = 0; 
+                currentAudio = null; 
+            } 
+        }
 
         function selectAsset(selectId, inputId, imgId) {
             const rawUrl = document.getElementById(selectId).value;
