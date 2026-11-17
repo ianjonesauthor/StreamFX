@@ -673,6 +673,16 @@
         }
 
         socket.on('status_update', (msg) => { document.getElementById('status').innerText = 'Status: ' + msg; });
+        
+        // Listen for live triggers and play audio on dashboard
+        socket.on('trigger_alert', (data) => {
+            if (data.soundUrl) {
+                stopPreview();
+                currentAudio = new Audio(data.soundUrl);
+                currentAudio.play().catch(e => console.log("Live alert audio play blocked or failed:", e));
+            }
+        });
+
         socket.on('member_join', (data) => { 
             appendToLog('log', `Joined: @${data.username}`); 
             initDashboard(); 
