@@ -6,7 +6,7 @@
   "Dinosaur": "dinosaur-rawr.mp3",
   "Galaxy": "epicplanet_galaxy.mp3",
   "Heart Me": "anime-wow.mp3",
-  "Popular Vote": "popular.mp3",
+  "Popular Vote": "./gift_sounds/popularv2.mp3",
   "GG": "gamecontroller.mp3",
   "Melody Glasses": "krafmash.mp3",
   "Rainbow": "rainbowtv.mp3",
@@ -40,10 +40,12 @@
   "Coffee": "realfrog.mp3",
   "Baby Fox": "wolf-howl.mp3",
   "Confetti": "tiki-tiki.mp3",
-  "Donuts": "Donut.mp3",
-  "Capybara": "capybara.mp3",
-  "Rose": "rose.mp3",
+  "Donuts": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/gift_sounds/Donut.mp3",
+  "Capybara": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/gift_sounds/capybara.mp3",
+  "Rose": "./gift_sounds/new sounds/homer-woohoo.mp3",
   "Airship": "Crazy Frog - Axel F (FULL).mp3",
   "Finger Heart": "axelfknightrider.mp3",
-  "Gold Boxing Gloves": "./gift_sounds/new sounds/chicken_wk5yBjL.mp3"
+  "Gold Boxing Gloves": "./gift_sounds/new sounds/chicken_wk5yBjL.mp3",
+  "Go Popular": "./gift_sounds/popular.mp3",
+  "Gamepad": "./gift_sounds/new sounds/yoshi-tongue.mp3"
 }

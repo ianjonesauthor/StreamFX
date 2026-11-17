@@ -1,8 +1,13 @@
 {
-  "Rose": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/Rose.png",
+  "Rose": "./tiktok_gift_images/gifts/581_Rose.webp",
   "Heart Me": "./overlays/Heat_Me.png",
   "Love You": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/Love_you.png",
   "Hand Heart": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/Hand_Hearts.png",
   "Boxing Gloves": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/Boxing_Gloves.png",
-  "Gold Boxing Gloves": "./tiktok_gift_images/gifts/285_Gold_Boxing_Gloves.webp"
+  "Gold Boxing Gloves": "./tiktok_gift_images/gifts/285_Gold_Boxing_Gloves.webp",
+  "Popular Vote": "./overlays/atf.png",
+  "Go Popular": "./tiktok_gift_images/gifts/284_Go_Popular.webp",
+  "Gamepad": "./tiktok_gift_images/gifts/368_LIVE_Ranking_Crown.webp",
+  "Capybara": "./tiktok_gift_images/gifts/086_Capybara.webp",
+  "Donuts": "./tiktok_gift_images/gifts/184_Doughnut.webp"
 }

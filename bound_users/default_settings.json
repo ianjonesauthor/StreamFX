@@ -1,4 +1,5 @@
 {
-  "defaultSound": "default.mp3",
-  "defaultImageUrl": "https://raw.githubusercontent.com/ianjonesauthor/StreamFX/main/overlays/atf.png"
+  "defaultSound": "./sounds/default.mp3",
+  "defaultFollowSound": "./sounds/new sounds/follow_vrIWkAR.mp3",
+  "defaultImageUrl": "./overlays/atf.png"
 }

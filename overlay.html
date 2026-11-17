@@ -139,12 +139,12 @@
                 audio.play().catch(e => console.log("Audio play blocked or missing:", e));
             }
 
-            // Remove box after animation completes (4 seconds)
+            // Remove box after animation completes (6 seconds)
             setTimeout(() => {
                 alertContainer.innerHTML = '';
                 isPlaying = false;
                 processQueue(); // process next in queue
-            }, 4000);
+            }, 6000);
         }
     </script>
 </body>
