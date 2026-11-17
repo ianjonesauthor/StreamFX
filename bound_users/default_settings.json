@@ -1,5 +1,5 @@
 {
   "defaultSound": "./sounds/default.mp3",
   "defaultFollowSound": "./sounds/new sounds/follow_vrIWkAR.mp3",
-  "defaultImageUrl": "./overlays/atf.png"
+  "defaultImageUrl": "USE_AVATAR"
 }
