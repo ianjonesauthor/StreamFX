@@ -2,191 +2,389 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamFX Live - Dashboard</title>
     <style>
-        body { background: #121212; color: #fff; font-family: sans-serif; padding: 20px; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
-        .log-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .log-box { background: #000; height: 150px; overflow-y: scroll; padding: 10px; border-radius: 10px; border: 1px solid #333; font-family: monospace; font-size: 12px; scroll-behavior: smooth; }
-        #log { color: #00ff00; } #giftLog { color: #00bfff; }
-        input, button, select { padding: 10px; margin: 5px 0; width: 100%; border-radius: 5px; border: none; box-sizing: border-box; }
-        button { background: #fe2c55; color: white; cursor: pointer; font-weight: bold; }
-        h2 { color: #fe2c55; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; }
-        .modal-content { background: #222; margin: 10% auto; padding: 20px; width: 80%; border-radius: 15px; border: 1px solid #fe2c55; text-align: center; }
-        .controls { display: flex; gap: 5px; }
-        .image-preview-container { display: flex; align-items: center; gap: 15px; margin-top: 10px; }
-        .preview-box { width: 60px; height: 60px; background: #000; border: 2px dashed #444; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        :root {
+            --bg-dark: #090d16;
+            --card-bg: #111827;
+            --surface-bg: #0b1120;
+            --border-blue: #1e3a8a;
+            --primary-blue: #2563eb;
+            --bright-blue: #3b82f6;
+            --crimson-red: #dc2626;
+            --bright-red: #ef4444;
+            --royal-gold: #f59e0b;
+            --bright-gold: #fbbf24;
+        }
+
+        body { 
+            background: var(--bg-dark); 
+            color: #f8fafc; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Centered Stream Deck / mobile-fluid container */
+        .deck-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 16px; 
+            border-radius: 14px; 
+            border: 1px solid var(--border-blue); 
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65);
+        }
+
+        h2 { 
+            color: var(--bright-gold); 
+            margin: 0 0 10px 0;
+            font-size: 1.35rem;
+            text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+        }
+
+        h3 { 
+            margin: 0 0 10px 0;
+            font-size: 0.95rem;
+            text-align: center;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .log-container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 8px; 
+        }
+
+        @media (max-width: 380px) {
+            .log-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .log-box { 
+            background: #050810; 
+            height: 110px; 
+            overflow-y: scroll; 
+            padding: 8px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-blue); 
+            font-family: monospace; 
+            font-size: 11px; 
+            scroll-behavior: smooth; 
+        }
+        #log { color: var(--bright-gold); } 
+        #giftLog { color: #60a5fa; }
+
+        input, select { 
+            padding: 10px; 
+            margin: 4px 0 8px 0; 
+            width: 100%; 
+            border-radius: 6px; 
+            border: 1px solid var(--border-blue); 
+            background: var(--surface-bg);
+            color: #fff;
+            box-sizing: border-box; 
+            font-size: 13px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--royal-gold);
+        }
+
+        button { 
+            padding: 10px 12px; 
+            margin: 4px 0; 
+            width: 100%; 
+            border-radius: 6px; 
+            border: none; 
+            box-sizing: border-box;
+            background: var(--crimson-red); 
+            color: white; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 12px;
+            letter-spacing: 0.4px;
+            transition: transform 0.1s ease, filter 0.15s ease;
+        }
+        button:hover { filter: brightness(1.12); }
+        button:active { transform: scale(0.98); }
+
+        .deck-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .controls { display: flex; gap: 6px; }
+        .controls button { flex: 1; }
+
+        /* Theme Button Variants */
+        .btn-blue { background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; border: 1px solid #3b82f6; }
+        .btn-red { background: linear-gradient(135deg, #b91c1c, #dc2626); color: #fff; border: 1px solid #ef4444; }
+        .btn-gold { background: linear-gradient(135deg, #d97706, #f59e0b); color: #090d16; border: 1px solid #fbbf24; }
+        .btn-dark-blue { background: #172554; color: #93c5fd; border: 1px solid #1e40af; }
+        .btn-mini { width: auto; padding: 3px 8px; font-size: 10px; margin: 0; background: #172554; color: #fbbf24; border: 1px solid #1e40af; }
+
+        .image-preview-container { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-top: 10px; 
+            background: var(--surface-bg);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-blue);
+        }
+        .preview-box { 
+            width: 56px; 
+            height: 56px; 
+            background: #050810; 
+            border: 2px dashed var(--royal-gold); 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; 
+            flex-shrink: 0; 
+        }
         .preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        #unlockOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(5, 8, 16, 0.88); 
+            z-index: 1000; 
+        }
+        .modal-content { 
+            background: var(--card-bg); 
+            margin: 15% auto; 
+            padding: 20px; 
+            width: 85%; 
+            max-width: 380px;
+            border-radius: 14px; 
+            border: 2px solid var(--royal-gold); 
+            text-align: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        #unlockOverlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: var(--bg-dark); 
+            z-index: 9999; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        .flex-row {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 4px;
+        }
+        small { font-size: 11px; color: #cbd5e1; }
     </style>
 </head>
 <body>
-    <div id="unlockOverlay"><button onclick="startApp()" style="width: 250px; height: 70px; font-size: 20px;">CLICK TO START AUDIO</button></div>
-
-    <!-- GITHUB SYNC CARD -->
-    <div class="card" style="border: 1px solid #238636;">
-        <h3 style="color: #3fb950; margin-top: 0;">GITHUB REPO SYNC</h3>
-        <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Instantly stage, commit, and push your entire local StreamFX Live folder (bindings, images, lists) to GitHub.</p>
-        <button id="gitSyncBtn" onclick="syncToGitHub()" style="background: #238636; color: white;">🚀 SYNC FOLDER TO GITHUB</button>
-        <div id="gitStatus" style="margin-top: 8px; font-size: 0.9rem; font-weight: bold;"></div>
+    <div id="unlockOverlay">
+        <button onclick="startApp()" class="btn-gold" style="width: 240px; height: 65px; font-size: 18px; box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);">CLICK TO START AUDIO</button>
     </div>
 
-    <div class="card">
-        <h2>StreamFX Live</h2>
-        <button onclick="document.getElementById('rankModal').style.display='block'" style="background: #ffa500; color: #000;">VIEW RANK SYSTEM</button>
-        <input id="tkUser" placeholder="Enter TikTok Username">
-        <button id="btnConnect">CONNECT TO TIKTOK</button>
-        <button id="btnDisconnect" style="background: #333; margin-top: 10px;">DISCONNECT</button>
-        <div id="status" style="margin-top:10px; font-size: 0.9rem; color: #fe2c55; font-weight: bold;">Status: Disconnected</div>
-    </div>
+    <div class="deck-container">
 
-    <div id="rankModal" class="modal">
-        <div class="modal-content">
-            <h2>Rank Progression</h2>
-            <p>⭐ Stars (1-5) | 🏆 Trophies (6-30) | 👑 Crowns (31-155) | 💎 Diamonds (300+)</p>
-            <button onclick="document.getElementById('rankModal').style.display='none'" style="background: #fe2c55;">CLOSE</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>LOGS</h3>
-        <div class="log-container">
-            <div><small style="color:#fe2c55;">EVENT LOG</small><div id="log" class="log-box"></div></div>
-            <div><small style="color:#fe2c55;">GIFT LOG</small><div id="giftLog" class="log-box"></div></div>
-        </div>
-    </div>
-
-    <!-- DEFAULT UNBOUND NEW JOIN & FOLLOW GREETING CARD -->
-    <div class="card" style="border: 1px solid #25f4ee;">
-        <h3 style="color: #25f4ee;">DEFAULT UNBOUND NEW JOIN & FOLLOW GREETING</h3>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <small style="margin:0;">Default User Join Sound (.mp3, .m4a)</small>
-            <button onclick="refreshSounds()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Sounds</button>
-        </div>
-        <select id="defaultSoundFile"><option value="">Select join sound...</option></select>
-        <div class="controls">
-            <button onclick="previewAudioElement('defaultSoundFile')" style="background: #444;">▶️ PLAY JOIN SOUND</button>
-            <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
+        <!-- GITHUB SYNC CARD -->
+        <div class="card" style="border: 1px solid var(--royal-gold);">
+            <h3 style="color: var(--bright-gold);">GITHUB REPO SYNC</h3>
+            <p style="font-size: 12px; color: #94a3b8; margin: 0 0 8px 0; text-align: center;">Instantly stage, commit, and push your entire local StreamFX Live folder (bindings, images, lists) to GitHub.</p>
+            <button id="gitSyncBtn" onclick="syncToGitHub()" class="btn-blue">🚀 SYNC FOLDER TO GITHUB</button>
+            <div id="gitStatus" style="margin-top: 6px; font-size: 12px; font-weight: bold; text-align: center;"></div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 5px;">
-            <small style="margin:0;">Default New Follower Audio (.mp3, .m4a)</small>
-        </div>
-        <select id="defaultFollowSoundFile"><option value="">Select follow sound...</option></select>
-        <div class="controls">
-            <button onclick="previewAudioElement('defaultFollowSoundFile')" style="background: #444;">▶️ PLAY FOLLOW SOUND</button>
-            <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
-        </div>
-
-        <div class="image-preview-container" style="margin-top: 15px;">
-            <div style="flex-grow: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <small style="margin:0;">Greeting Overlay Image (or user avatar fallback)</small>
-                    <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
-                </div>
-                <select id="defaultImageSelect" onchange="selectAsset('defaultImageSelect', 'defaultImageUrl', 'defaultPreviewImg')">
-                    <option value="">Loading repo images...</option>
-                </select>
-                <input id="defaultImageUrl" type="hidden">
+        <!-- MAIN CONNECTION CARD -->
+        <div class="card" style="border: 1px solid var(--bright-red);">
+            <h2>StreamFX Live</h2>
+            <button onclick="document.getElementById('rankModal').style.display='block'" class="btn-gold">VIEW RANK SYSTEM</button>
+            <input id="tkUser" placeholder="Enter TikTok Username">
+            <div class="deck-grid">
+                <button id="btnConnect" class="btn-red">CONNECT TO TIKTOK</button>
+                <button id="btnDisconnect" class="btn-dark-blue">DISCONNECT</button>
             </div>
-            <div>
-                <small>Preview</small>
-                <div class="preview-box">
-                    <img id="defaultPreviewImg" alt="Preview">
-                </div>
+            <div id="status" style="margin-top:8px; font-size: 12px; color: var(--bright-gold); font-weight: bold; text-align: center;">Status: Disconnected</div>
+        </div>
+
+        <div id="rankModal" class="modal">
+            <div class="modal-content">
+                <h2 style="color: var(--bright-gold);">Rank Progression</h2>
+                <p style="font-size: 13px; color: #e2e8f0;">⭐ Stars (1-5) | 🏆 Trophies (6-30) | 👑 Crowns (31-155) | 💎 Diamonds (300+)</p>
+                <button onclick="document.getElementById('rankModal').style.display='none'" class="btn-red">CLOSE</button>
             </div>
         </div>
 
-        <button onclick="saveDefaultSettings()" style="background: #25f4ee; color: #000; margin-top: 15px;">SAVE DEFAULT JOIN & FOLLOW SETTINGS</button>
-        <button onclick="testAlert('default')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST DEFAULT JOIN ALERT</button>
-        <button onclick="testAlert('follow')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST DEFAULT FOLLOW ALERT</button>
-    </div>
-
-    <!-- BIND USER CARD -->
-    <div class="card">
-        <h3>BIND USER TO SOUND & IMAGE</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div>
-                <small>Bound Users</small>
-                <select id="userName"><option value="">Bound Users...</option></select>
-                <button onclick="removeBinding()" style="background: #ff4d4d; font-size: 10px; padding: 5px;">REMOVE BINDING</button>
-                <small>Unbound New Joins</small>
-                <select id="unboundUserSelect"><option value="">Waiting for joins...</option></select>
-            </div>
-            <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <small style="margin:0;">Sound Assignment</small>
-                    <button onclick="refreshSounds()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Sounds</button>
-                </div>
-                <select id="userFile"><option value="">Select sound...</option></select>
-                <div class="controls">
-                    <button onclick="previewAudioElement('userFile')" style="background: #444;">▶️ PLAY</button>
-                    <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="image-preview-container">
-            <div style="flex-grow: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <small style="margin:0;">Overlay & Gift Images</small>
-                    <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
-                </div>
-                <select id="userImageSelect" onchange="selectAsset('userImageSelect', 'userImageUrl', 'userPreviewImg')">
-                    <option value="">Loading repo images...</option>
-                </select>
-                <input id="userImageUrl" type="hidden">
-            </div>
-            <div>
-                <small>Preview</small>
-                <div class="preview-box">
-                    <img id="userPreviewImg" alt="Preview">
-                </div>
+        <!-- LOGS CARD -->
+        <div class="card">
+            <h3 style="color: var(--bright-blue);">LIVE LOGS</h3>
+            <div class="log-container">
+                <div><small style="color: var(--bright-red); font-weight: bold;">EVENT LOG</small><div id="log" class="log-box"></div></div>
+                <div><small style="color: var(--bright-gold); font-weight: bold;">GIFT LOG</small><div id="giftLog" class="log-box"></div></div>
             </div>
         </div>
 
-        <button onclick="saveBinding('user')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE USER BINDING</button>
-        <button onclick="testAlert('user')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST USER ALERT</button>
-    </div>
-
-    <!-- BIND GIFT CARD -->
-    <div class="card">
-        <h3>BIND GIFT TO SOUND & IMAGE</h3>
-        <select id="giftDropdown"><option value="">Select a gift...</option></select>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 5px;">
-            <small style="margin:0;">Gift Sound Assignment (.mp3, .m4a)</small>
-            <button onclick="refreshGiftSounds()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Gift Sounds</button>
-        </div>
-        <select id="giftFile"><option value="">Select sound...</option></select>
-        <div class="controls">
-            <button onclick="previewAudioElement('giftFile')" style="background: #444;">▶️ PLAY</button>
-            <button onclick="stopPreview()" style="background: #444;">⏹️ STOP</button>
-        </div>
-
-        <div class="image-preview-container">
-            <div style="flex-grow: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <small style="margin:0;">Overlay & Gift Images</small>
-                    <button onclick="refreshOverlayImages()" style="width: auto; padding: 2px 8px; font-size: 10px; background: #333; margin: 0;">🔄 Refresh Repo</button>
-                </div>
-                <select id="giftImageSelect" onchange="selectAsset('giftImageSelect', 'giftImageUrl', 'giftPreviewImg')">
-                    <option value="">Loading repo images...</option>
-                </select>
-                <input id="giftImageUrl" type="hidden">
+        <!-- DEFAULT UNBOUND NEW JOIN & FOLLOW GREETING CARD -->
+        <div class="card" style="border: 1px solid var(--bright-blue);">
+            <h3 style="color: var(--bright-blue);">DEFAULT UNBOUND NEW JOIN & FOLLOW GREETING</h3>
+            
+            <div class="flex-row">
+                <small style="margin:0;">Default User Join Sound (.mp3, .m4a)</small>
+                <button onclick="refreshSounds()" class="btn-mini">🔄 Refresh Sounds</button>
             </div>
-            <div>
-                <small>Preview</small>
-                <div class="preview-box">
-                    <img id="giftPreviewImg" alt="Preview">
+            <select id="defaultSoundFile"><option value="">Select join sound...</option></select>
+            <div class="controls">
+                <button onclick="previewAudioElement('defaultSoundFile')" class="btn-dark-blue">▶️ PLAY JOIN SOUND</button>
+                <button onclick="stopPreview()" class="btn-dark-blue">⏹️ STOP</button>
+            </div>
+
+            <div class="flex-row" style="margin-top: 12px;">
+                <small style="margin:0;">Default New Follower Audio (.mp3, .m4a)</small>
+            </div>
+            <select id="defaultFollowSoundFile"><option value="">Select follow sound...</option></select>
+            <div class="controls">
+                <button onclick="previewAudioElement('defaultFollowSoundFile')" class="btn-dark-blue">▶️ PLAY FOLLOW SOUND</button>
+                <button onclick="stopPreview()" class="btn-dark-blue">⏹️ STOP</button>
+            </div>
+
+            <div class="image-preview-container">
+                <div style="flex-grow: 1; overflow: hidden;">
+                    <div class="flex-row">
+                        <small style="margin:0;">Greeting Overlay Image (or user avatar fallback)</small>
+                        <button onclick="refreshOverlayImages()" class="btn-mini">🔄 Refresh Repo</button>
+                    </div>
+                    <select id="defaultImageSelect" onchange="selectAsset('defaultImageSelect', 'defaultImageUrl', 'defaultPreviewImg')">
+                        <option value="">Loading repo images...</option>
+                    </select>
+                    <input id="defaultImageUrl" type="hidden">
                 </div>
+                <div>
+                    <small>Preview</small>
+                    <div class="preview-box">
+                        <img id="defaultPreviewImg" alt="Preview">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="saveDefaultSettings()" class="btn-blue" style="margin-top: 12px;">SAVE DEFAULT JOIN & FOLLOW SETTINGS</button>
+            <div class="deck-grid">
+                <button onclick="testAlert('default')" class="btn-gold">🧪 TEST DEFAULT JOIN</button>
+                <button onclick="testAlert('follow')" class="btn-gold">🧪 TEST DEFAULT FOLLOW</button>
             </div>
         </div>
 
-        <button onclick="saveBinding('gift')" style="background: #25f4ee; color: #000; margin-top: 10px;">SAVE GIFT BINDING TO DATABASE</button>
-        <button onclick="testAlert('gift')" style="background: #ffa500; color: #000; margin-top: 5px;">🧪 TEST GIFT ALERT</button>
+        <!-- BIND USER CARD -->
+        <div class="card" style="border: 1px solid var(--crimson-red);">
+            <h3 style="color: var(--bright-red);">BIND USER TO SOUND & IMAGE</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <small>Bound Users</small>
+                    <select id="userName"><option value="">Bound Users...</option></select>
+                    <button onclick="removeBinding()" class="btn-red" style="font-size: 10px; padding: 6px;">REMOVE BINDING</button>
+                    <div style="margin-top: 6px;"><small>Unbound New Joins</small></div>
+                    <select id="unboundUserSelect"><option value="">Waiting for joins...</option></select>
+                </div>
+                <div>
+                    <div class="flex-row">
+                        <small style="margin:0;">Sound Assignment</small>
+                        <button onclick="refreshSounds()" class="btn-mini">🔄 Refresh</button>
+                    </div>
+                    <select id="userFile"><option value="">Select sound...</option></select>
+                    <div class="controls">
+                        <button onclick="previewAudioElement('userFile')" class="btn-dark-blue">▶️ PLAY</button>
+                        <button onclick="stopPreview()" class="btn-dark-blue">⏹️ STOP</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="image-preview-container">
+                <div style="flex-grow: 1; overflow: hidden;">
+                    <div class="flex-row">
+                        <small style="margin:0;">Overlay & Gift Images</small>
+                        <button onclick="refreshOverlayImages()" class="btn-mini">🔄 Refresh Repo</button>
+                    </div>
+                    <select id="userImageSelect" onchange="selectAsset('userImageSelect', 'userImageUrl', 'userPreviewImg')">
+                        <option value="">Loading repo images...</option>
+                    </select>
+                    <input id="userImageUrl" type="hidden">
+                </div>
+                <div>
+                    <small>Preview</small>
+                    <div class="preview-box">
+                        <img id="userPreviewImg" alt="Preview">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="saveBinding('user')" class="btn-blue" style="margin-top: 10px;">SAVE USER BINDING</button>
+            <button onclick="testAlert('user')" class="btn-gold">🧪 TEST USER ALERT</button>
+        </div>
+
+        <!-- BIND GIFT CARD -->
+        <div class="card" style="border: 1px solid var(--royal-gold);">
+            <h3 style="color: var(--bright-gold);">BIND GIFT TO SOUND & IMAGE</h3>
+            <select id="giftDropdown"><option value="">Select a gift...</option></select>
+            
+            <div class="flex-row" style="margin-top: 8px;">
+                <small style="margin:0;">Gift Sound Assignment (.mp3, .m4a)</small>
+                <button onclick="refreshGiftSounds()" class="btn-mini">🔄 Refresh Gift Sounds</button>
+            </div>
+            <select id="giftFile"><option value="">Select sound...</option></select>
+            <div class="controls">
+                <button onclick="previewAudioElement('giftFile')" class="btn-dark-blue">▶️ PLAY</button>
+                <button onclick="stopPreview()" class="btn-dark-blue">⏹️ STOP</button>
+            </div>
+
+            <div class="image-preview-container">
+                <div style="flex-grow: 1; overflow: hidden;">
+                    <div class="flex-row">
+                        <small style="margin:0;">Overlay & Gift Images</small>
+                        <button onclick="refreshOverlayImages()" class="btn-mini">🔄 Refresh Repo</button>
+                    </div>
+                    <select id="giftImageSelect" onchange="selectAsset('giftImageSelect', 'giftImageUrl', 'giftPreviewImg')">
+                        <option value="">Loading repo images...</option>
+                    </select>
+                    <input id="giftImageUrl" type="hidden">
+                </div>
+                <div>
+                    <small>Preview</small>
+                    <div class="preview-box">
+                        <img id="giftPreviewImg" alt="Preview">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="saveBinding('gift')" class="btn-blue" style="margin-top: 10px;">SAVE GIFT BINDING TO DATABASE</button>
+            <button onclick="testAlert('gift')" class="btn-gold">🧪 TEST GIFT ALERT</button>
+        </div>
+
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -200,16 +398,16 @@
             const status = document.getElementById('gitStatus');
             btn.disabled = true;
             btn.textContent = 'SYNCING TO GITHUB...';
-            status.style.color = '#ffa500';
+            status.style.color = '#fbbf24';
             status.textContent = 'Staging, committing, and pushing...';
 
             try {
                 const res = await fetch('/git-sync', { method: 'POST' });
                 const data = await res.json();
-                status.style.color = data.success ? '#3fb950' : '#f85149';
+                status.style.color = data.success ? '#60a5fa' : '#ef4444';
                 status.textContent = data.message;
             } catch (e) {
-                status.style.color = '#f85149';
+                status.style.color = '#ef4444';
                 status.textContent = 'Sync failed: Server connection error.';
             } finally {
                 btn.disabled = false;
