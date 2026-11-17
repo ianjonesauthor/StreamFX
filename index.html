@@ -28,7 +28,6 @@
             justify-content: center;
         }
 
-        /* Centered Stream Deck / mobile-fluid container */
         .deck-container {
             width: 100%;
             max-width: 480px;
@@ -70,9 +69,7 @@
         }
 
         @media (max-width: 380px) {
-            .log-container {
-                grid-template-columns: 1fr;
-            }
+            .log-container { grid-template-columns: 1fr; }
         }
 
         .log-box { 
@@ -100,10 +97,7 @@
             box-sizing: border-box; 
             font-size: 13px;
         }
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--royal-gold);
-        }
+        input:focus, select:focus { outline: none; border-color: var(--royal-gold); }
 
         button { 
             padding: 10px 12px; 
@@ -123,16 +117,10 @@
         button:hover { filter: brightness(1.12); }
         button:active { transform: scale(0.98); }
 
-        .deck-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
+        .deck-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .controls { display: flex; gap: 6px; }
         .controls button { flex: 1; }
 
-        /* Theme Button Variants */
         .btn-blue { background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; border: 1px solid #3b82f6; }
         .btn-red { background: linear-gradient(135deg, #b91c1c, #dc2626); color: #fff; border: 1px solid #ef4444; }
         .btn-gold { background: linear-gradient(135deg, #d97706, #f59e0b); color: #090d16; border: 1px solid #fbbf24; }
@@ -163,16 +151,7 @@
         }
         .preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
 
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(5, 8, 16, 0.88); 
-            z-index: 1000; 
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 8, 16, 0.88); z-index: 1000; }
         .modal-content { 
             background: var(--card-bg); 
             margin: 15% auto; 
@@ -198,12 +177,7 @@
             justify-content: center; 
         }
 
-        .flex-row {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 4px;
-        }
+        .flex-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         small { font-size: 11px; color: #cbd5e1; }
     </style>
 </head>
@@ -281,7 +255,8 @@
                         <button onclick="refreshOverlayImages()" class="btn-mini">🔄 Refresh Repo</button>
                     </div>
                     <select id="defaultImageSelect" onchange="selectAsset('defaultImageSelect', 'defaultImageUrl', 'defaultPreviewImg')">
-                        <option value="">Loading repo images...</option>
+                        <option value="USE_AVATAR">⭐ [USE USER'S TIKTOK AVATAR]</option>
+                        <option value="">Select repo image...</option>
                     </select>
                     <input id="defaultImageUrl" type="hidden">
                 </div>
@@ -308,8 +283,12 @@
                     <small>Bound Users</small>
                     <select id="userName"><option value="">Bound Users...</option></select>
                     <button onclick="removeBinding()" class="btn-red" style="font-size: 10px; padding: 6px;">REMOVE BINDING</button>
-                    <div style="margin-top: 6px;"><small>Unbound New Joins</small></div>
-                    <select id="unboundUserSelect"><option value="">Waiting for joins...</option></select>
+                    <div style="margin-top: 6px;"><small>Search Unbound Joins</small></div>
+                    <!-- Searchable Input with Datalist -->
+                    <input list="unboundUserList" id="unboundUserSearch" placeholder="Type or select user...">
+                    <datalist id="unboundUserList">
+                        <option value="">Waiting for joins...</option>
+                    </datalist>
                 </div>
                 <div>
                     <div class="flex-row">
@@ -331,7 +310,8 @@
                         <button onclick="refreshOverlayImages()" class="btn-mini">🔄 Refresh Repo</button>
                     </div>
                     <select id="userImageSelect" onchange="selectAsset('userImageSelect', 'userImageUrl', 'userPreviewImg')">
-                        <option value="">Loading repo images...</option>
+                        <option value="USE_AVATAR">⭐ [USE USER'S TIKTOK AVATAR]</option>
+                        <option value="">Select repo image...</option>
                     </select>
                     <input id="userImageUrl" type="hidden">
                 </div>
@@ -369,7 +349,8 @@
                         <button onclick="refreshOverlayImages()" class="btn-mini">🔄 Refresh Repo</button>
                     </div>
                     <select id="giftImageSelect" onchange="selectAsset('giftImageSelect', 'giftImageUrl', 'giftPreviewImg')">
-                        <option value="">Loading repo images...</option>
+                        <option value="USE_AVATAR">⭐ [USE USER'S TIKTOK AVATAR]</option>
+                        <option value="">Select repo image...</option>
                     </select>
                     <input id="giftImageUrl" type="hidden">
                 </div>
@@ -418,7 +399,7 @@
         function previewAudioElement(selectId) {
             stopPreview();
             const url = document.getElementById(selectId).value;
-            if(!url) return;
+            if(!url || url === 'USE_AVATAR') return;
             currentAudio = new Audio(url);
             currentAudio.play().catch(e => console.error("Preview blocked:", e));
         }
@@ -430,7 +411,11 @@
             const inputElement = document.getElementById(inputId);
             const imgElement = document.getElementById(imgId);
 
-            if (rawUrl) {
+            if (rawUrl === 'USE_AVATAR') {
+                inputElement.value = 'USE_AVATAR';
+                imgElement.src = '';
+                imgElement.style.display = 'none';
+            } else if (rawUrl) {
                 inputElement.value = rawUrl;
                 imgElement.src = rawUrl;
                 imgElement.style.display = 'block';
@@ -445,7 +430,8 @@
             try {
                 const res = await fetch('/get-overlay-images');
                 const images = await res.json();
-                const options = `<option value="">Select repo image...</option>` + 
+                const options = `<option value="USE_AVATAR">⭐ [USE USER'S TIKTOK AVATAR]</option>` + 
+                    `<option value="">Select repo image...</option>` + 
                     images.map(img => `<option value="${img.url}">${img.label}</option>`).join('');
                 
                 document.getElementById('userImageSelect').innerHTML = options;
@@ -512,11 +498,11 @@
 
         function saveBinding(type) {
             if (type === 'user') {
-                const user = (document.getElementById('unboundUserSelect').value || document.getElementById('userName').value).toLowerCase();
+                const user = (document.getElementById('unboundUserSearch').value || document.getElementById('userName').value).toLowerCase().trim();
                 const file = document.getElementById('userFile').value;
                 const imageUrl = document.getElementById('userImageUrl').value.trim();
                 
-                if(!user) return alert("Select user");
+                if(!user) return alert("Select or type a user");
                 if(file) bindings[user] = file;
                 if(imageUrl) userImages[user] = imageUrl;
 
@@ -541,7 +527,7 @@
         function testAlert(type) {
             if (type === 'default') {
                 const soundUrl = document.getElementById('defaultSoundFile').value;
-                const imageUrl = document.getElementById('defaultImageUrl').value.trim();
+                const imageUrl = document.getElementById('defaultImageUrl').value.trim() === 'USE_AVATAR' ? 'https://p19-sign.tiktokcdn-us.com/tos-useast-avt-0068/7313000000000000000~c5_100x100.jpeg?x-expires=1700000000' : document.getElementById('defaultImageUrl').value.trim();
 
                 socket.emit('trigger_alert', {
                     username: "NewViewer",
@@ -551,7 +537,7 @@
                 });
             } else if (type === 'follow') {
                 const soundUrl = document.getElementById('defaultFollowSoundFile').value;
-                const imageUrl = document.getElementById('defaultImageUrl').value.trim();
+                const imageUrl = document.getElementById('defaultImageUrl').value.trim() === 'USE_AVATAR' ? 'https://p19-sign.tiktokcdn-us.com/tos-useast-avt-0068/7313000000000000000~c5_100x100.jpeg?x-expires=1700000000' : document.getElementById('defaultImageUrl').value.trim();
 
                 socket.emit('trigger_alert', {
                     username: "NewFollower",
@@ -560,7 +546,7 @@
                     soundUrl: soundUrl || null
                 });
             } else if (type === 'user') {
-                const user = document.getElementById('unboundUserSelect').value || document.getElementById('userName').value || "TestUser";
+                const user = document.getElementById('unboundUserSearch').value || document.getElementById('userName').value || "TestUser";
                 const soundUrl = document.getElementById('userFile').value;
                 const imageUrl = document.getElementById('userImageUrl').value.trim();
 
@@ -605,8 +591,11 @@
                 }
                 if (defaultSettings.defaultImageUrl) {
                     document.getElementById('defaultImageUrl').value = defaultSettings.defaultImageUrl;
-                    document.getElementById('defaultPreviewImg').src = defaultSettings.defaultImageUrl;
-                    document.getElementById('defaultPreviewImg').style.display = 'block';
+                    document.getElementById('defaultImageSelect').value = defaultSettings.defaultImageUrl;
+                    if (defaultSettings.defaultImageUrl !== 'USE_AVATAR') {
+                        document.getElementById('defaultPreviewImg').src = defaultSettings.defaultImageUrl;
+                        document.getElementById('defaultPreviewImg').style.display = 'block';
+                    }
                 }
 
                 let allBoundUsers = [...new Set([...Object.keys(bindings), ...Object.keys(userImages)])];
@@ -623,7 +612,7 @@
                 
                 let unbound = (usersRes.joined || []).filter(u => !bindings[u] && !userImages[u]);
                 unbound.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'accent' }));
-                document.getElementById('unboundUserSelect').innerHTML = `<option value="">Unbound Users...</option>` + unbound.map(u => `<option value="${u}">${u}</option>`).join('');
+                document.getElementById('unboundUserList').innerHTML = unbound.map(u => `<option value="${u}">`).join('');
             } catch (e) { console.error("Init Error:", e); }
         }
 

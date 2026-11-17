@@ -149,7 +149,11 @@ io.on('connection', (socket) => {
                 const user = d.uniqueId;
                 const avatar = d.profilePictureUrl || '';
                 const soundFile = defaultSettings.defaultFollowSound || '';
-                const imageUrl = defaultSettings.defaultImageUrl || avatar || '';
+                
+                let imageUrl = defaultSettings.defaultImageUrl;
+                if (!imageUrl || imageUrl === 'USE_AVATAR') {
+                    imageUrl = avatar;
+                }
 
                 io.emit('follow', { username: user, avatar });
                 io.emit('trigger_alert', {
@@ -168,7 +172,14 @@ io.on('connection', (socket) => {
 
                 const lowerUser = user.toLowerCase();
                 const soundFile = userBindings[lowerUser] || defaultSettings.defaultSound || '';
-                const imageUrl = userImages[lowerUser] || defaultSettings.defaultImageUrl || avatar || '';
+                
+                let imageUrl = userImages[lowerUser];
+                if (!imageUrl) {
+                    imageUrl = defaultSettings.defaultImageUrl;
+                    if (!imageUrl || imageUrl === 'USE_AVATAR') {
+                        imageUrl = avatar;
+                    }
+                }
 
                 if (soundFile || imageUrl) {
                     io.emit('trigger_alert', {
