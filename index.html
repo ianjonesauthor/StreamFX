@@ -281,8 +281,11 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <small>Bound Users</small>
-                    <select id="userName"><option value="">Bound Users...</option></select>
-                    <button onclick="removeBinding()" class="btn-red" style="font-size: 10px; padding: 6px;">REMOVE BINDING</button>
+                    <select id="userName" onchange="loadBoundUserSettings()"><option value="">Bound Users...</option></select>
+                    <div class="controls" style="margin-top: 4px;">
+                        <button onclick="testBoundUserAlert()" class="btn-gold" style="font-size: 10px; padding: 6px;">🧪 TEST</button>
+                        <button onclick="removeBinding()" class="btn-red" style="font-size: 10px; padding: 6px;">UNBIND</button>
+                    </div>
                     <div style="margin-top: 6px;"><small>Search Unbound Joins</small></div>
                     <!-- Searchable Input with Datalist -->
                     <input list="unboundUserList" id="unboundUserSearch" placeholder="Type or select user...">
@@ -424,6 +427,53 @@
                 imgElement.src = '';
                 imgElement.style.display = 'none';
             }
+        }
+
+        // Automatically load saved binding details into controls when a bound user is selected
+        function loadBoundUserSettings() {
+            const user = document.getElementById('userName').value;
+            if (!user) return;
+
+            // Load sound binding if exists
+            const soundVal = bindings[user] || '';
+            document.getElementById('userFile').value = soundVal;
+
+            // Load image binding if exists
+            const imageVal = userImages[user] || '';
+            if (imageVal) {
+                document.getElementById('userImageSelect').value = imageVal;
+                document.getElementById('userImageUrl').value = imageVal;
+                if (imageVal === 'USE_AVATAR') {
+                    document.getElementById('userPreviewImg').src = '';
+                    document.getElementById('userPreviewImg').style.display = 'none';
+                } else {
+                    document.getElementById('userPreviewImg').src = imageVal;
+                    document.getElementById('userPreviewImg').style.display = 'block';
+                }
+            } else {
+                document.getElementById('userImageSelect').value = '';
+                document.getElementById('userImageUrl').value = '';
+                document.getElementById('userPreviewImg').src = '';
+                document.getElementById('userPreviewImg').style.display = 'none';
+            }
+        }
+
+        // Test the selected bound user directly without re-applying
+        function testBoundUserAlert() {
+            const user = document.getElementById('userName').value;
+            if (!user) return alert("Please select a bound user from the 'Bound Users' dropdown first.");
+
+            const soundFile = bindings[user] || '';
+            const imageUrl = userImages[user] === 'USE_AVATAR' 
+                ? 'https://p19-sign.tiktokcdn-us.com/tos-useast-avt-0068/7313000000000000000~c5_100x100.jpeg?x-expires=1700000000' 
+                : (userImages[user] || '');
+
+            socket.emit('trigger_alert', {
+                username: user,
+                text: `Joined the stream! (Bound Test)`,
+                imageUrl: imageUrl,
+                soundUrl: soundFile ? (soundFile.startsWith('http') || soundFile.startsWith('./') ? soundFile : `./sounds/${soundFile}`) : null
+            });
         }
 
         async function refreshOverlayImages() {
